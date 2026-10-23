@@ -1,0 +1,18 @@
+dimension,group,fintech_loans_rs,bank_loans_rs,fintech_lenders,bank_lenders,coverage_ok,status,fintech_median_rate_spread,bank_median_rate_spread,rate_spread_gap_bps,fintech_rs_p25,fintech_rs_p75,bank_rs_p25,bank_rs_p75,fintech_median_interest_rate,bank_median_interest_rate,interest_rate_gap_bps,fintech_median_orig_pct,bank_median_orig_pct,orig_pct_gap_bps
+dti_group,<30%,31122,79062,15,642,True,Fintech higher (+5 bps or more),0.152,-0.004,15.6,-0.094,0.435,-0.227,0.2422,6.625,6.5,12.5,0.987,0.5838,40.32
+dti_group,30%-<36%,28507,64841,15,641,True,Fintech higher (+5 bps or more),0.201,0.035,16.6,-0.063,0.498,-0.201,0.299,6.625,6.5,12.5,0.9259,0.5555,37.04
+dti_group,36%-43%,54011,111330,15,644,True,Fintech higher (+5 bps or more),0.236,0.064,17.2,-0.035,0.549,-0.188,0.348,6.625,6.5,12.5,0.8968,0.5526,34.42
+dti_group,44%-49%,61334,89917,15,609,True,Fintech higher (+5 bps or more),0.241,0.083,15.8,-0.04,0.563,-0.166,0.3745,6.625,6.5,12.5,0.9927,0.5853,40.74
+dti_group,>=50%,719,1478,13,201,True,Fintech higher (+5 bps or more),1.944,-0.0295,197.35,0.73,2.2125,-0.6432,0.7,8.37,6.375,199.5,2.0,0.3623,163.77
+cltv_group,<=80%,83281,177123,14,654,True,Fintech higher (+5 bps or more),0.053,-0.066,11.9,-0.166,0.291,-0.266,0.148,6.575,6.5,7.5,0.9084,0.5641,34.43
+cltv_group,80.01%-90%,28191,52134,14,623,True,Fintech higher (+5 bps or more),0.229,0.094,13.5,-0.025,0.502,-0.135,0.355,6.625,6.5,12.5,0.9052,0.5269,37.82
+cltv_group,90.01%-95%,38677,64222,14,617,True,Fintech higher (+5 bps or more),0.413,0.247,16.6,0.15,0.708,0.017,0.506,6.75,6.625,12.5,0.9091,0.5257,38.34
+cltv_group,>95%,23925,53494,14,573,True,Fintech higher (+5 bps or more),0.538,0.235,30.3,0.253,0.845,-0.093,0.547,6.75,6.5,25.0,1.1159,0.6889,42.71
+income_group,<=$75k,41603,91568,15,642,True,Fintech higher (+5 bps or more),0.221,0.034,18.7,-0.075,0.585,-0.22,0.327,6.562,6.49,7.2,1.4491,0.8701,57.9
+income_group,$75k-$125k,52385,102154,15,644,True,Fintech higher (+5 bps or more),0.236,0.073,16.3,-0.035,0.545,-0.169,0.35,6.625,6.5,12.5,1.0236,0.6042,41.95
+income_group,$125k-$200k,46483,83569,15,632,True,Fintech higher (+5 bps or more),0.221,0.07,15.1,-0.037,0.511,-0.157,0.338,6.625,6.625,0.0,0.7716,0.4507,32.09
+income_group,>$200k,34462,62364,15,622,True,Fintech higher (+5 bps or more),0.184,0.005,17.9,-0.065,0.477,-0.226,0.268,6.625,6.575,5.0,0.4996,0.3059,19.37
+loan_amount_group,<=$200k,32915,84036,15,635,True,Fintech higher (+5 bps or more),0.331,0.094,23.7,0.005,0.732,-0.162,0.401,6.625,6.5,12.5,1.6615,0.9669,69.46
+loan_amount_group,$200k-$350k,62919,130059,15,650,True,Fintech higher (+5 bps or more),0.237,0.06,17.7,-0.036,0.543,-0.174,0.329,6.625,6.5,12.5,1.014,0.5791,43.5
+loan_amount_group,$350k-$500k,39721,68494,15,627,True,Fintech higher (+5 bps or more),0.195,0.05,14.5,-0.06,0.473,-0.1818,0.309,6.625,6.5,12.5,0.7481,0.3894,35.88
+loan_amount_group,>$500k,40199,64410,15,597,True,Fintech higher (+5 bps or more),0.14,-0.045,18.5,-0.099,0.421,-0.287,0.2196,6.625,6.5,12.5,0.3771,0.2465,13.06

@@ -1,0 +1,14 @@
+{
+  "original_fields_compared_on_every_row": true,
+  "all_classification_columns_verified_on_every_row": true,
+  "source_outputs_match_downloader_manifest": true,
+  "loan_rows_verified": 1508076,
+  "lender_rows_verified": 2378,
+  "nyu_reference_rows_verified": 18,
+  "loans_by_group": {
+    "Bank comparator": 347634,
+    "Other lender": 882342,
+    "Credit union": 102172,
+    "Fintech": 175928
+  }
+}

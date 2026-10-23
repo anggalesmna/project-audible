@@ -1,0 +1,52 @@
+{
+  "status": "complete",
+  "started_at_utc": "2026-10-22T17:37:42+00:00",
+  "reporting_year": 2025,
+  "dataset": "Official static snapshot; not the live Data Browser API",
+  "documentation": {
+    "data_publication": "https://ffiec.cfpb.gov/data-publication/",
+    "field_definitions": "https://ffiec.cfpb.gov/documentation/publications/loan-level-datasets/lar-data-fields",
+    "reporting_instructions": "https://www.consumerfinance.gov/rules-policy/regulations/1003/4/",
+    "official_download_link_definitions": "https://github.com/cfpb/hmda-frontend/blob/master/src/data-publication/constants/snapshot-dataset.jsx"
+  },
+  "command_arguments": {
+    "year": 2025,
+    "output_dir": "/Users/anggalesmana/Documents/Master of Engineering in Fintech/02 Fall Term/02 Courses/03 FINTECH 590/590 Assignment/project_audible_data/data/2025",
+    "states": null,
+    "download_only": false,
+    "reference_only": false
+  },
+  "script_sha256": "6c87a2b64d4316b6402d854b5aac5401fb432ce10feb5d8e634ebe92b96ddc5b",
+  "downloads": {
+    "ts": {
+      "url": "https://files.ffiec.cfpb.gov/static-data/snapshot/2025/2025_public_ts_csv.zip",
+      "downloaded_at_utc": "2026-10-22T17:36:39+00:00",
+      "etag": "\"e11486f26557694db25efaf90823809a\"",
+      "last_modified": "Tue, 23 Jun 2026 13:29:49 GMT",
+      "bytes": 194185,
+      "sha256": "6d4157afc236b25c28913b58c2b7460c26bb2395f24aa519570d0e23ae1f87e6"
+    },
+    "lar": {
+      "url": "https://files.ffiec.cfpb.gov/static-data/snapshot/2025/2025_public_lar_csv.zip",
+      "downloaded_at_utc": "2026-10-22T17:37:14+00:00",
+      "etag": "\"20e9146b50ad4fe5dc33152a506090bd-88\"",
+      "last_modified": "Tue, 23 Jun 2026 13:29:33 GMT",
+      "bytes": 737139477,
+      "sha256": "9b25c05d15704a49889e585a930e0273fecbe3f3eade44cb6ee773d6ab628ff2"
+    }
+  },
+  "eligible_loans": 1508076,
+  "outputs": [
+    {
+      "file": "mortgages_2025.csv",
+      "bytes": 230609487,
+      "sha256": "9d2dd8f60ab9e3b4e1fa3c0bbeb211153fa114087dd8deb6d64c57680f9d720e"
+    },
+    {
+      "file": "lender_inventory_2025.csv",
+      "bytes": 132562,
+      "sha256": "26df1b776f81705907f73214d65775f830e897c6751adc6fc14f37ad3c6da662"
+    }
+  ],
+  "finished_at_utc": "2026-10-22T17:39:13+00:00"
+}

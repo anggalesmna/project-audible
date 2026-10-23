@@ -1,0 +1,37 @@
+indicator,description,required_valid_variables,group,total_loans,eligible_loans,eligible_pct,excluded_loans,total_lenders,eligible_lenders
+elig_rate_spread,Median rate spread (main measure),rate_spread,Fintech,175928,175754,99.9011,174,15,15
+elig_rate_spread,Median rate spread (main measure),rate_spread,Bank comparator,347634,346999,99.8173,635,662,659
+elig_rate_spread,Median rate spread (main measure),rate_spread,Credit union,102172,100489,98.3528,1683,988,916
+elig_rate_spread,Median rate spread (main measure),rate_spread,Other lender,882342,878663,99.583,3679,713,700
+elig_rate_spread,Median rate spread (main measure),rate_spread,Main comparison (Fintech + Bank),523562,522753,99.8455,809,677,674
+elig_rate_spread,Median rate spread (main measure),rate_spread,All loans,1508076,1501905,99.5908,6171,2378,2290
+elig_interest_rate,Median interest rate (supporting),interest_rate,Fintech,175928,175917,99.9937,11,15,15
+elig_interest_rate,Median interest rate (supporting),interest_rate,Bank comparator,347634,347571,99.9819,63,662,662
+elig_interest_rate,Median interest rate (supporting),interest_rate,Credit union,102172,102063,99.8933,109,988,984
+elig_interest_rate,Median interest rate (supporting),interest_rate,Other lender,882342,881637,99.9201,705,713,713
+elig_interest_rate,Median interest rate (supporting),interest_rate,Main comparison (Fintech + Bank),523562,523488,99.9859,74,677,677
+elig_interest_rate,Median interest rate (supporting),interest_rate,All loans,1508076,1507188,99.9411,888,2378,2374
+elig_orig_pct,Median origination charges / loan amount (supporting),origination_charges + loan_amount,Fintech,175928,175569,99.7959,359,15,15
+elig_orig_pct,Median origination charges / loan amount (supporting),origination_charges + loan_amount,Bank comparator,347634,346870,99.7802,764,662,660
+elig_orig_pct,Median origination charges / loan amount (supporting),origination_charges + loan_amount,Credit union,102172,101074,98.9253,1098,988,949
+elig_orig_pct,Median origination charges / loan amount (supporting),origination_charges + loan_amount,Other lender,882342,875211,99.1918,7131,713,703
+elig_orig_pct,Median origination charges / loan amount (supporting),origination_charges + loan_amount,Main comparison (Fintech + Bank),523562,522439,99.7855,1123,677,675
+elig_orig_pct,Median origination charges / loan amount (supporting),origination_charges + loan_amount,All loans,1508076,1498724,99.3799,9352,2378,2327
+elig_all_pricing,All three pricing measures available (common subset),rate_spread + interest_rate + origination_charges + loan_amount,Fintech,175928,175543,99.7812,385,15,15
+elig_all_pricing,All three pricing measures available (common subset),rate_spread + interest_rate + origination_charges + loan_amount,Bank comparator,347634,346572,99.6945,1062,662,656
+elig_all_pricing,All three pricing measures available (common subset),rate_spread + interest_rate + origination_charges + loan_amount,Credit union,102172,99689,97.5698,2483,988,900
+elig_all_pricing,All three pricing measures available (common subset),rate_spread + interest_rate + origination_charges + loan_amount,Other lender,882342,872102,98.8395,10240,713,697
+elig_all_pricing,All three pricing measures available (common subset),rate_spread + interest_rate + origination_charges + loan_amount,Main comparison (Fintech + Bank),523562,522115,99.7236,1447,677,671
+elig_all_pricing,All three pricing measures available (common subset),rate_spread + interest_rate + origination_charges + loan_amount,All loans,1508076,1493906,99.0604,14170,2378,2268
+elig_controlled,"Rate spread within DTI, CLTV, income and loan-amount groups",rate_spread + debt_to_income_ratio + combined_loan_to_value_ratio + income + loan_amount,Fintech,175928,173253,98.4795,2675,15,14
+elig_controlled,"Rate spread within DTI, CLTV, income and loan-amount groups",rate_spread + debt_to_income_ratio + combined_loan_to_value_ratio + income + loan_amount,Bank comparator,347634,339609,97.6915,8025,662,656
+elig_controlled,"Rate spread within DTI, CLTV, income and loan-amount groups",rate_spread + debt_to_income_ratio + combined_loan_to_value_ratio + income + loan_amount,Credit union,102172,96939,94.8782,5233,988,880
+elig_controlled,"Rate spread within DTI, CLTV, income and loan-amount groups",rate_spread + debt_to_income_ratio + combined_loan_to_value_ratio + income + loan_amount,Other lender,882342,857296,97.1614,25046,713,682
+elig_controlled,"Rate spread within DTI, CLTV, income and loan-amount groups",rate_spread + debt_to_income_ratio + combined_loan_to_value_ratio + income + loan_amount,Main comparison (Fintech + Bank),523562,512862,97.9563,10700,677,670
+elig_controlled,"Rate spread within DTI, CLTV, income and loan-amount groups",rate_spread + debt_to_income_ratio + combined_loan_to_value_ratio + income + loan_amount,All loans,1508076,1467097,97.2827,40979,2378,2232
+elig_state,Rate spread by property state,rate_spread + state_code,Fintech,175928,175754,99.9011,174,15,15
+elig_state,Rate spread by property state,rate_spread + state_code,Bank comparator,347634,346994,99.8159,640,662,659
+elig_state,Rate spread by property state,rate_spread + state_code,Credit union,102172,100473,98.3371,1699,988,916
+elig_state,Rate spread by property state,rate_spread + state_code,Other lender,882342,878511,99.5658,3831,713,699
+elig_state,Rate spread by property state,rate_spread + state_code,Main comparison (Fintech + Bank),523562,522748,99.8445,814,677,674
+elig_state,Rate spread by property state,rate_spread + state_code,All loans,1508076,1501732,99.5793,6344,2378,2289

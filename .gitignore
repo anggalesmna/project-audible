@@ -1,0 +1,28 @@
+# macOS metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Microsoft Office temporary lock files
+~$*.docx
+~$*.xlsx
+~$*.pptx
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Large raw & intermediate datasets (>50MB GitHub limits)
+# These files can be reproduced anytime via python3 download_hmda.py
+project_audible_data/data/**/raw/*.zip
+project_audible_data/data/**/raw/*.xlsx
+project_audible_data/data/**/mortgages_2025*.csv
+project_audible_data/data/**/lender_classification_2025.csv

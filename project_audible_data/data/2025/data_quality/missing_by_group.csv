@@ -1,0 +1,55 @@
+group,variable,total_loans,valid,na,exempt,blank,invalid,not_usable_total,not_usable_pct
+Fintech,rate_spread,175928,175754,174,0,0,0,174,0.0989
+Fintech,interest_rate,175928,175917,0,0,0,11,11,0.0063
+Fintech,origination_charges,175928,175569,359,0,0,0,359,0.2041
+Fintech,loan_amount,175928,175928,0,0,0,0,0,0.0
+Fintech,debt_to_income_ratio,175928,175867,61,0,0,0,61,0.0347
+Fintech,combined_loan_to_value_ratio,175928,174248,1680,0,0,0,1680,0.9549
+Fintech,income,175928,175107,794,0,0,27,821,0.4667
+Fintech,state_code,175928,175928,0,0,0,0,0,0.0
+Fintech,county_code,175928,175928,0,0,0,0,0,0.0
+Bank comparator,rate_spread,347634,346999,635,0,0,0,635,0.1827
+Bank comparator,interest_rate,347634,347571,9,0,0,54,63,0.0181
+Bank comparator,origination_charges,347634,346870,760,4,0,0,764,0.2198
+Bank comparator,loan_amount,347634,347634,0,0,0,0,0,0.0
+Bank comparator,debt_to_income_ratio,347634,347248,386,0,0,0,386,0.111
+Bank comparator,combined_loan_to_value_ratio,347634,347601,33,0,0,0,33,0.0095
+Bank comparator,income,347634,340269,7260,0,0,105,7365,2.1186
+Bank comparator,state_code,347634,347629,5,0,0,0,5,0.0014
+Bank comparator,county_code,347634,347557,77,0,0,0,77,0.0221
+Credit union,rate_spread,102172,100489,1676,5,0,2,1683,1.6472
+Credit union,interest_rate,102172,102063,44,0,0,65,109,0.1067
+Credit union,origination_charges,102172,101074,1098,0,0,0,1098,1.0747
+Credit union,loan_amount,102172,102172,0,0,0,0,0,0.0
+Credit union,debt_to_income_ratio,102172,101163,1009,0,0,0,1009,0.9876
+Credit union,combined_loan_to_value_ratio,102172,99747,2425,0,0,0,2425,2.3734
+Credit union,income,102172,100881,1210,0,0,81,1291,1.2636
+Credit union,state_code,102172,102122,50,0,0,0,50,0.0489
+Credit union,county_code,102172,102055,117,0,0,0,117,0.1145
+Other lender,rate_spread,882342,878663,3678,1,0,0,3679,0.417
+Other lender,interest_rate,882342,881637,64,0,0,641,705,0.0799
+Other lender,origination_charges,882342,875211,7131,0,0,0,7131,0.8082
+Other lender,loan_amount,882342,882342,0,0,0,0,0,0.0
+Other lender,debt_to_income_ratio,882342,872342,10000,0,0,0,10000,1.1333
+Other lender,combined_loan_to_value_ratio,882342,870755,11587,0,0,0,11587,1.3132
+Other lender,income,882342,875825,4484,0,0,2033,6517,0.7386
+Other lender,state_code,882342,882190,152,0,0,0,152,0.0172
+Other lender,county_code,882342,881761,581,0,0,0,581,0.0658
+Main comparison (Fintech + Bank),rate_spread,523562,522753,809,0,0,0,809,0.1545
+Main comparison (Fintech + Bank),interest_rate,523562,523488,9,0,0,65,74,0.0141
+Main comparison (Fintech + Bank),origination_charges,523562,522439,1119,4,0,0,1123,0.2145
+Main comparison (Fintech + Bank),loan_amount,523562,523562,0,0,0,0,0,0.0
+Main comparison (Fintech + Bank),debt_to_income_ratio,523562,523115,447,0,0,0,447,0.0854
+Main comparison (Fintech + Bank),combined_loan_to_value_ratio,523562,521849,1713,0,0,0,1713,0.3272
+Main comparison (Fintech + Bank),income,523562,515376,8054,0,0,132,8186,1.5635
+Main comparison (Fintech + Bank),state_code,523562,523557,5,0,0,0,5,0.001
+Main comparison (Fintech + Bank),county_code,523562,523485,77,0,0,0,77,0.0147
+All loans,rate_spread,1508076,1501905,6163,6,0,2,6171,0.4092
+All loans,interest_rate,1508076,1507188,117,0,0,771,888,0.0589
+All loans,origination_charges,1508076,1498724,9348,4,0,0,9352,0.6201
+All loans,loan_amount,1508076,1508076,0,0,0,0,0,0.0
+All loans,debt_to_income_ratio,1508076,1496620,11456,0,0,0,11456,0.7596
+All loans,combined_loan_to_value_ratio,1508076,1492351,15725,0,0,0,15725,1.0427
+All loans,income,1508076,1492082,13748,0,0,2246,15994,1.0606
+All loans,state_code,1508076,1507869,207,0,0,0,207,0.0137
+All loans,county_code,1508076,1507301,775,0,0,0,775,0.0514

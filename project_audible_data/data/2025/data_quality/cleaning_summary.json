@@ -1,0 +1,379 @@
+{
+  "status": "complete",
+  "reporting_year": 2025,
+  "started_at_utc": "2026-10-23T00:17:14+00:00",
+  "finished_at_utc": "2026-10-23T00:17:43+00:00",
+  "input": {
+    "file": "mortgages_2025_classified.csv",
+    "sha256": "2bebd1dac7f8b01c29945500ba297e0e078b6195eebb61e5c588deb0d2d01f25"
+  },
+  "output": {
+    "file": "mortgages_2025_clean.csv",
+    "sha256": "2775bccd05c689c225eb9a772add50f7c3a2bc6babb70d09aaad966823bf3963"
+  },
+  "script_sha256": "b2e2b3a5e2ab4ada7c928c5079f342910cd933c370bb03777f1d1422d33ac287",
+  "loans_by_group": {
+    "Bank comparator": 347634,
+    "All loans": 1508076,
+    "Main comparison (Fintech + Bank)": 523562,
+    "Other lender": 882342,
+    "Credit union": 102172,
+    "Fintech": 175928
+  },
+  "lenders_by_group": {
+    "Bank comparator": 662,
+    "All loans": 2378,
+    "Main comparison (Fintech + Bank)": 677,
+    "Other lender": 713,
+    "Credit union": 988,
+    "Fintech": 15
+  },
+  "columns_added": [
+    "rate_spread_num",
+    "interest_rate_num",
+    "origination_charges_num",
+    "loan_amount_num",
+    "orig_charge_pct",
+    "dti_category",
+    "dti_num",
+    "cltv_num",
+    "income_k_num",
+    "dti_group",
+    "cltv_group",
+    "income_group",
+    "loan_amount_group",
+    "review_flags",
+    "in_main_comparison",
+    "elig_rate_spread",
+    "elig_interest_rate",
+    "elig_orig_pct",
+    "elig_all_pricing",
+    "elig_controlled",
+    "elig_state"
+  ],
+  "indicators": {
+    "elig_rate_spread": {
+      "description": "Median rate spread (main measure)",
+      "requires_valid": [
+        "rate_spread"
+      ]
+    },
+    "elig_interest_rate": {
+      "description": "Median interest rate (supporting)",
+      "requires_valid": [
+        "interest_rate"
+      ]
+    },
+    "elig_orig_pct": {
+      "description": "Median origination charges / loan amount (supporting)",
+      "requires_valid": [
+        "origination_charges",
+        "loan_amount"
+      ]
+    },
+    "elig_all_pricing": {
+      "description": "All three pricing measures available (common subset)",
+      "requires_valid": [
+        "rate_spread",
+        "interest_rate",
+        "origination_charges",
+        "loan_amount"
+      ]
+    },
+    "elig_controlled": {
+      "description": "Rate spread within DTI, CLTV, income and loan-amount groups",
+      "requires_valid": [
+        "rate_spread",
+        "debt_to_income_ratio",
+        "combined_loan_to_value_ratio",
+        "income",
+        "loan_amount"
+      ]
+    },
+    "elig_state": {
+      "description": "Rate spread by property state",
+      "requires_valid": [
+        "rate_spread",
+        "state_code"
+      ]
+    }
+  },
+  "eligible_loans": {
+    "elig_rate_spread": {
+      "Fintech": 175754,
+      "Bank comparator": 346999,
+      "Credit union": 100489,
+      "Other lender": 878663,
+      "Main comparison (Fintech + Bank)": 522753,
+      "All loans": 1501905
+    },
+    "elig_interest_rate": {
+      "Fintech": 175917,
+      "Bank comparator": 347571,
+      "Credit union": 102063,
+      "Other lender": 881637,
+      "Main comparison (Fintech + Bank)": 523488,
+      "All loans": 1507188
+    },
+    "elig_orig_pct": {
+      "Fintech": 175569,
+      "Bank comparator": 346870,
+      "Credit union": 101074,
+      "Other lender": 875211,
+      "Main comparison (Fintech + Bank)": 522439,
+      "All loans": 1498724
+    },
+    "elig_all_pricing": {
+      "Fintech": 175543,
+      "Bank comparator": 346572,
+      "Credit union": 99689,
+      "Other lender": 872102,
+      "Main comparison (Fintech + Bank)": 522115,
+      "All loans": 1493906
+    },
+    "elig_controlled": {
+      "Fintech": 173253,
+      "Bank comparator": 339609,
+      "Credit union": 96939,
+      "Other lender": 857296,
+      "Main comparison (Fintech + Bank)": 512862,
+      "All loans": 1467097
+    },
+    "elig_state": {
+      "Fintech": 175754,
+      "Bank comparator": 346994,
+      "Credit union": 100473,
+      "Other lender": 878511,
+      "Main comparison (Fintech + Bank)": 522748,
+      "All loans": 1501732
+    }
+  },
+  "review_flags_by_group": {
+    "Bank comparator": {
+      "INCOME_ZERO_OR_NEGATIVE": 105,
+      "RS_UNUSUAL": 518,
+      "IR_ZERO_OR_NEGATIVE": 54,
+      "ORIG_PCT_GT5": 314,
+      "INCOME_GT10M": 2,
+      "CLTV_UNUSUAL": 20,
+      "IR_UNUSUAL": 46
+    },
+    "All loans": {
+      "INCOME_ZERO_OR_NEGATIVE": 2246,
+      "ORIG_PCT_GT5": 2757,
+      "CLTV_UNUSUAL": 146,
+      "RS_UNUSUAL": 1649,
+      "IR_ZERO_OR_NEGATIVE": 771,
+      "INCOME_GT10M": 701,
+      "IR_UNUSUAL": 225
+    },
+    "Main comparison (Fintech + Bank)": {
+      "INCOME_ZERO_OR_NEGATIVE": 132,
+      "RS_UNUSUAL": 547,
+      "IR_ZERO_OR_NEGATIVE": 65,
+      "ORIG_PCT_GT5": 469,
+      "INCOME_GT10M": 5,
+      "CLTV_UNUSUAL": 20,
+      "IR_UNUSUAL": 46
+    },
+    "Other lender": {
+      "INCOME_ZERO_OR_NEGATIVE": 2033,
+      "ORIG_PCT_GT5": 2237,
+      "CLTV_UNUSUAL": 112,
+      "INCOME_GT10M": 696,
+      "RS_UNUSUAL": 921,
+      "IR_ZERO_OR_NEGATIVE": 641,
+      "IR_UNUSUAL": 177
+    },
+    "Credit union": {
+      "INCOME_ZERO_OR_NEGATIVE": 81,
+      "ORIG_PCT_GT5": 51,
+      "RS_UNUSUAL": 181,
+      "CLTV_UNUSUAL": 14,
+      "IR_ZERO_OR_NEGATIVE": 65,
+      "IR_UNUSUAL": 2
+    },
+    "Fintech": {
+      "ORIG_PCT_GT5": 155,
+      "INCOME_GT10M": 3,
+      "INCOME_ZERO_OR_NEGATIVE": 27,
+      "RS_UNUSUAL": 29,
+      "IR_ZERO_OR_NEGATIVE": 11
+    }
+  },
+  "rules": {
+    "rate_spread": {
+      "invalid": "non-numeric, or below -10 percentage points (would imply a negative APR, because the 2025 APOR for these loans was far below 10%)",
+      "review": "below -3 or above 5 percentage points (flag RS_UNUSUAL)"
+    },
+    "interest_rate": {
+      "invalid": "non-numeric or <= 0 (a 0% conventional purchase mortgage is not plausible)",
+      "review": "below 2% or above 12% (flag IR_UNUSUAL)"
+    },
+    "origination_charges": {
+      "invalid": "non-numeric or negative (0 is valid: the loan had no origination charges)",
+      "review": "origination charges above 5% of loan amount (flag ORIG_PCT_GT5)"
+    },
+    "loan_amount": {
+      "invalid": "non-numeric or <= 0",
+      "review": "none"
+    },
+    "debt_to_income_ratio": {
+      "invalid": "anything other than an exact value 36-49 or an official HMDA range",
+      "review": "none (ranges are valid categories, not missing values)"
+    },
+    "combined_loan_to_value_ratio": {
+      "invalid": "non-numeric or <= 0",
+      "review": "below 5% or above 150% (flag CLTV_UNUSUAL)"
+    },
+    "income": {
+      "invalid": "non-numeric or <= 0 (cannot be placed in an income group); HMDA income is in thousands of dollars",
+      "review": "above 10,000 thousand = $10 million per year (flag INCOME_GT10M)"
+    },
+    "state_code": {
+      "invalid": "not a two-letter code",
+      "review": "none"
+    },
+    "county_code": {
+      "invalid": "not a numeric FIPS code",
+      "review": "none"
+    }
+  },
+  "principles": [
+    "No rows deleted",
+    "No values imputed",
+    "NA, Exempt and blank kept distinct",
+    "Eligibility decided per indicator",
+    "Review-flagged values stay eligible; exclude them only in robustness checks"
+  ],
+  "distributions_of_eligible_values": {
+    "Fintech": {
+      "rate_spread": {
+        "n": 175754,
+        "min": -6.657,
+        "p01": -1.568,
+        "p25": -0.052,
+        "median": 0.217,
+        "p75": 0.528,
+        "p99": 1.93,
+        "max": 8.532
+      },
+      "interest_rate": {
+        "n": 175917,
+        "min": 2.99,
+        "p01": 4.99,
+        "p25": 6.375,
+        "median": 6.625,
+        "p75": 6.937,
+        "p99": 8.125,
+        "max": 11.62
+      },
+      "orig_charge_pct": {
+        "n": 175569,
+        "min": 0.0,
+        "p01": 0.0,
+        "p25": 0.420852,
+        "median": 0.955911,
+        "p75": 1.761382,
+        "p99": 4.1472,
+        "max": 17.980952
+      }
+    },
+    "Bank comparator": {
+      "rate_spread": {
+        "n": 346999,
+        "min": -7.045,
+        "p01": -1.395,
+        "p25": -0.195,
+        "median": 0.045,
+        "p75": 0.3222,
+        "p99": 1.655,
+        "max": 8.108
+      },
+      "interest_rate": {
+        "n": 347571,
+        "min": 1.0,
+        "p01": 5.125,
+        "p25": 6.125,
+        "median": 6.5,
+        "p75": 6.875,
+        "p99": 7.875,
+        "max": 13.625
+      },
+      "orig_charge_pct": {
+        "n": 346870,
+        "min": 0.0,
+        "p01": 0.0,
+        "p25": 0.29258,
+        "median": 0.567568,
+        "p75": 1.140113,
+        "p99": 3.776832,
+        "max": 10.76
+      }
+    },
+    "Credit union": {
+      "rate_spread": {
+        "n": 100489,
+        "min": -7.000502,
+        "p01": -1.221,
+        "p25": -0.232,
+        "median": -0.011,
+        "p75": 0.262,
+        "p99": 1.559,
+        "max": 8.97
+      },
+      "interest_rate": {
+        "n": 102063,
+        "min": 2.0,
+        "p01": 5.25,
+        "p25": 6.125,
+        "median": 6.5,
+        "p75": 6.75,
+        "p99": 8.0,
+        "max": 20.0
+      },
+      "orig_charge_pct": {
+        "n": 101074,
+        "min": 0.0,
+        "p01": 0.0,
+        "p25": 0.218391,
+        "median": 0.459332,
+        "p75": 0.982921,
+        "p99": 3.129624,
+        "max": 8.500133
+      }
+    },
+    "Other lender": {
+      "rate_spread": {
+        "n": 878663,
+        "min": -8.168,
+        "p01": -1.825,
+        "p25": -0.06,
+        "median": 0.225,
+        "p75": 0.539,
+        "p99": 2.197,
+        "max": 31.502
+      },
+      "interest_rate": {
+        "n": 881637,
+        "min": 0.5,
+        "p01": 4.875,
+        "p25": 6.25,
+        "median": 6.625,
+        "p75": 6.99,
+        "p99": 8.5,
+        "max": 13.0
+      },
+      "orig_charge_pct": {
+        "n": 875211,
+        "min": 0.0,
+        "p01": 0.0,
+        "p25": 0.404938,
+        "median": 0.891549,
+        "p75": 1.674678,
+        "p99": 4.289091,
+        "max": 40.036
+      }
+    }
+  }
+}

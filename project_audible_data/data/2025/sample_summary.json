@@ -1,0 +1,126 @@
+{
+  "year": 2025,
+  "property_states": "All reported geographies",
+  "filters_in_order": [
+    {
+      "field": "action_taken",
+      "equals": "1"
+    },
+    {
+      "field": "loan_type",
+      "equals": "1"
+    },
+    {
+      "field": "loan_purpose",
+      "equals": "1"
+    },
+    {
+      "field": "lien_status",
+      "equals": "1"
+    },
+    {
+      "field": "occupancy_type",
+      "equals": "1"
+    },
+    {
+      "field": "conforming_loan_limit",
+      "equals": "C"
+    },
+    {
+      "field": "loan_term",
+      "equals": "360"
+    },
+    {
+      "field": "intro_rate_period",
+      "equals": "NA"
+    }
+  ],
+  "filter_funnel": {
+    "rows_read": 13543606,
+    "after_property_state_filter": 13543606,
+    "after_action_taken": 6827891,
+    "after_loan_type": 5320033,
+    "after_loan_purpose": 2582011,
+    "after_lien_status": 2441298,
+    "after_occupancy_type": 2003696,
+    "after_conforming_loan_limit": 1903911,
+    "after_loan_term": 1652678,
+    "after_intro_rate_period": 1508076
+  },
+  "eligible_loans": 1508076,
+  "eligible_lenders": 2378,
+  "loans_by_property_state": {
+    "AK": 2982,
+    "AL": 18734,
+    "AR": 11254,
+    "AZ": 39168,
+    "CA": 110260,
+    "CO": 36762,
+    "CT": 18336,
+    "DC": 2985,
+    "DE": 6311,
+    "FL": 107888,
+    "GA": 47837,
+    "GU": 20,
+    "HI": 3834,
+    "IA": 16732,
+    "ID": 12135,
+    "IL": 65512,
+    "IN": 41379,
+    "KS": 14173,
+    "KY": 18822,
+    "LA": 12075,
+    "MA": 29182,
+    "MD": 29431,
+    "ME": 6560,
+    "MI": 55886,
+    "MN": 38719,
+    "MO": 32586,
+    "MS": 6825,
+    "MT": 4725,
+    "NA": 207,
+    "NC": 56290,
+    "ND": 3492,
+    "NE": 10647,
+    "NH": 8047,
+    "NJ": 42309,
+    "NM": 7302,
+    "NV": 15599,
+    "NY": 63506,
+    "OH": 63623,
+    "OK": 14334,
+    "OR": 22914,
+    "PA": 62644,
+    "PR": 2707,
+    "RI": 4853,
+    "SC": 30570,
+    "SD": 4019,
+    "TN": 34021,
+    "TX": 125064,
+    "UT": 20283,
+    "VA": 42970,
+    "VI": 70,
+    "VT": 3122,
+    "WA": 39440,
+    "WI": 31700,
+    "WV": 5062,
+    "WY": 2168
+  },
+  "pricing_missing_or_not_applicable": {
+    "rate_spread": 6169,
+    "interest_rate": 117,
+    "origination_charges": 9352,
+    "discount_points": 734772,
+    "lender_credits": 1010144,
+    "total_loan_costs": 24388
+  },
+  "eligible_lenders_missing_from_ts": [],
+  "classification_template_created": true,
+  "notes": [
+    "All institution types are retained pending documented fintech/bank classification.",
+    "NA, Exempt, zeroes and blank values are preserved as reported; no imputation or price-based exclusions.",
+    "Income is reported in thousands of dollars; DTI includes reported ranges.",
+    "intro_rate_period=NA is the pitch's fixed-rate screening rule, not an independent product verification.",
+    "An existing classification file is never overwritten; compare it with lender_inventory when changing scope."
+  ]
+}
