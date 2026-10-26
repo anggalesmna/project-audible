@@ -93,6 +93,16 @@ class TestAnalyzePricing(unittest.TestCase):
             self.assertEqual(nb['bank_loans_rs'], 200)
             self.assertEqual(nb['bank_lenders'], 10)
             self.assertAlmostEqual(nb['rate_spread_gap_bps'], 10.0)
+            self.assertEqual(nb['comparator_loans_rs'], 200)
+            seg = {(r['dimension'], r['group']): r for r in summary['nonbank_by_segment']}
+            row = seg['dti_group', '36%-43%']
+            self.assertEqual(row['fintech_loans_rs'], 150)  # DTI >=50% loans never enter
+            self.assertEqual(row['comparator_loans_rs'], 200)
+            self.assertAlmostEqual(row['rate_spread_gap_bps'], 10.0)
+            self.assertNotIn(('dti_group', '>=50%'), seg)
+            self.assertTrue((Path(tmp) / 'by_segment_vs_nonbank.csv').exists())
+            self.assertEqual(summary['nonbank_priority']['basis'], 'rate_spread')
+
             slices = {r['slice']: r for r in summary['robustness_checks']}
             self.assertEqual(slices['Controlled sample incl. DTI >=50%']['fintech_loans_rs'], 550)
             self.assertEqual(hm['fintech_lenders_above_bank_median'], '3 of 3')
@@ -100,6 +110,20 @@ class TestAnalyzePricing(unittest.TestCase):
             with (Path(tmp) / 'robustness_checks.csv').open() as f:
                 self.assertEqual(len(list(csv.DictReader(f))), len(summary['robustness_checks']))
             json.loads((Path(tmp) / 'pricing_summary.json').read_text())
+
+    def test_nonbank_priority_rule(self):
+        def seg(dim, group, rs, fee, ok=True):
+            return {'dimension': dim, 'group': group, 'coverage_ok': ok,
+                    'rate_spread_gap_bps': rs, 'orig_pct_gap_bps': fee}
+        rows = [seg('cltv_group', '>95%', 8.0, 3.0), seg('loan_amount_group', '<=$200k', 6.0, 20.0),
+                seg('income_group', '<=$75k', 30.0, 30.0, ok=False), seg('dti_group', '<30%', 1.0, 1.0)]
+        p = ap.nonbank_priority(rows)
+        self.assertEqual(p['basis'], 'rate_spread')
+        self.assertEqual([s['group'] for s in p['segments']], ['>95%', '<=$200k'])  # thin cell ignored
+        p = ap.nonbank_priority([seg('cltv_group', '>95%', 1.0, 12.0), seg('dti_group', '<30%', -2.0, 4.0)])
+        self.assertEqual((p['basis'], [s['group'] for s in p['segments']]), ('fees', ['>95%']))
+        self.assertEqual(ap.nonbank_priority([seg('dti_group', '<30%', 0.0, 2.0)]),
+                         {'basis': 'overall_fees', 'segments': []})
 
 
 if __name__ == '__main__':

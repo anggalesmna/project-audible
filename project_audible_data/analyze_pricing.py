@@ -282,6 +282,12 @@ def analyze(clean_csv_path, out_dir):
     national_ctrl = Bucket()          # controlled baseline (DTI <50%): headline sample
     ctrl_incl_dti50 = Bucket()        # controlled incl. DTI >=50% (robustness)
     rob_vs_nonbank = Bucket()         # Fintech vs non-fintech independent mortgage banks
+    nonbank_dims = {
+        'dti_group': {k: Bucket() for k in DTI_STANDARD_ORDER},
+        'cltv_group': {k: Bucket() for k in CLTV_ORDER},
+        'income_group': {k: Bucket() for k in INCOME_ORDER},
+        'loan_amount_group': {k: Bucket() for k in LOAN_ORDER},
+    }
     rob_base_no_21st = Bucket()
     rob_base_no_rocket = Bucket()
     base_rs_f = defaultdict(lambda: array('d'))
@@ -331,6 +337,9 @@ def analyze(clean_csv_path, out_dir):
             # Alternative comparator: Fintech vs non-fintech nonbanks (same baseline filters)
             if baseline and role in ('fintech', 'nonbank'):
                 rob_vs_nonbank.add(is_fintech, lei, rs, ir, oc)
+                for dim, groups in nonbank_dims.items():
+                    if row[dim] in groups:
+                        groups[row[dim]].add(is_fintech, lei, rs, ir, oc)
             if role == 'nonbank':
                 continue
 
@@ -437,10 +446,18 @@ def analyze(clean_csv_path, out_dir):
     bank_lender_medians = [median(v) for v in base_rs_b.values() if len(v) >= 10]
     equal_lender_gap_bps = r2(100.0 * (median(fintech_lender_medians) - median(bank_lender_medians)))
 
-    nonbank_sum = rob_vs_nonbank.summarize({
+    nonbank_sum = with_comparator_fields(rob_vs_nonbank.summarize({
         'slice': 'Alternative comparator: Fintech vs non-fintech nonbanks (TYPE 40/41), baseline filters',
         'comparator': 'Non-fintech nonbank',
-    })
+    }))
+    nonbank_segment_rows = []
+    for dim, groups in nonbank_dims.items():
+        for group, bucket in groups.items():
+            nonbank_segment_rows.append(with_comparator_fields(bucket.summarize({
+                'dimension': dim, 'group': group, 'comparator': 'Non-fintech nonbank',
+            })))
+    write_csv(out_dir / 'by_segment_vs_nonbank.csv', nonbank_segment_rows,
+              list(dict.fromkeys(k for r in nonbank_segment_rows for k in r)))
     robustness_rows = [
         dict(nat_ctrl_sum),
         nonbank_sum,
@@ -593,6 +610,8 @@ def analyze(clean_csv_path, out_dir):
             'four_way_reweighted_gap_bps_bank_weights': r2(weighted_gap_num_b / weighted_gap_den_b) if weighted_gap_den_b else None,
         },
         'robustness_checks': robustness_rows,
+        'nonbank_by_segment': nonbank_segment_rows,
+        'nonbank_priority': nonbank_priority(nonbank_segment_rows),
         'single_dimension': single_dim_rows,
         'dti_cltv_grid': grid_rows,
         'fintech_lenders': fintech_lender_rows,
@@ -603,6 +622,66 @@ def analyze(clean_csv_path, out_dir):
     os.replace(tmp, out_dir / 'pricing_summary.json')
     write_markdown_report(out_dir / 'analysis_report.md', summary, state_rows)
     return summary
+
+
+SEGMENT_LABELS = {
+    ('dti_group', '<30%'): 'DTI <30%', ('dti_group', '30%-<36%'): 'DTI 30-36%',
+    ('dti_group', '36%-43%'): 'DTI 36-43%', ('dti_group', '44%-49%'): 'DTI 44-49%',
+    ('cltv_group', '<=80%'): 'CLTV ≤80% (20%+ down)', ('cltv_group', '80.01%-90%'): 'CLTV 80-90%',
+    ('cltv_group', '90.01%-95%'): 'CLTV 90-95%', ('cltv_group', '>95%'): 'CLTV >95% (under 5% down)',
+    ('income_group', '<=$75k'): 'income ≤$75k', ('income_group', '$75k-$125k'): 'income $75k-$125k',
+    ('income_group', '$125k-$200k'): 'income $125k-$200k', ('income_group', '>$200k'): 'income >$200k',
+    ('loan_amount_group', '<=$200k'): 'loans ≤$200k', ('loan_amount_group', '$200k-$350k'): 'loans $200k-$350k',
+    ('loan_amount_group', '$350k-$500k'): 'loans $350k-$500k', ('loan_amount_group', '>$500k'): 'loans >$500k',
+}
+PRIORITY_FEE_GAP_BPS = 10.0
+
+
+def nonbank_priority(segment_rows, top=2):
+    """Pick the first review segments from the Fintech-vs-nonbank comparison.
+
+    Rule (stated, not tuned): segments with sufficient coverage where Fintech's median rate
+    spread is >= +5 bps above nonbank peers; if none, segments where the fee gap is
+    >= +10 bps; if none, the review starts with origination fees overall.
+    """
+    ok = [r for r in segment_rows if r['coverage_ok']]
+
+    def pick(key, threshold):
+        hits = [r for r in ok if r[key] is not None and r[key] >= threshold]
+        hits.sort(key=lambda r: -r[key])
+        return [{'dimension': r['dimension'], 'group': r['group'],
+                 'label': SEGMENT_LABELS.get((r['dimension'], r['group']), r['group']),
+                 'rate_spread_gap_bps': r['rate_spread_gap_bps'], 'orig_pct_gap_bps': r['orig_pct_gap_bps']}
+                for r in hits[:top]]
+
+    segments = pick('rate_spread_gap_bps', MEANINGFUL_GAP_BPS)
+    if segments:
+        return {'basis': 'rate_spread', 'segments': segments}
+    segments = pick('orig_pct_gap_bps', PRIORITY_FEE_GAP_BPS)
+    if segments:
+        return {'basis': 'fees', 'segments': segments}
+    return {'basis': 'overall_fees', 'segments': []}
+
+
+COMPARATOR_FIELD_MAP = {
+    'bank_loans_rs': 'comparator_loans_rs', 'bank_lenders': 'comparator_lenders',
+    'bank_median_rate_spread': 'comparator_median_rate_spread',
+    'bank_rs_p25': 'comparator_rs_p25', 'bank_rs_p75': 'comparator_rs_p75',
+    'bank_median_interest_rate': 'comparator_median_interest_rate',
+    'bank_median_orig_pct': 'comparator_median_orig_pct',
+}
+
+
+def with_comparator_fields(summary):
+    """Label a non-bank comparison clearly: Bucket stores the comparator in bank_* fields.
+
+    The bank_* keys are kept for compatibility; comparator_* copies say what they really hold.
+    """
+    out = dict(summary)
+    for src, dst in COMPARATOR_FIELD_MAP.items():
+        out[dst] = summary.get(src)
+    out['field_note'] = 'In this row bank_* fields hold the non-fintech nonbank comparator; see comparator_* fields.'
+    return out
 
 
 def write_markdown_report(path, summary, state_rows):
@@ -662,6 +741,19 @@ def write_markdown_report(path, summary, state_rows):
             f"| {r['slice']} | {r['fintech_loans_rs']:,} | {r['bank_loans_rs']:,} | "
             f"{p3(r['fintech_median_rate_spread'])} | {p3(r['bank_median_rate_spread'])} | "
             f"**{b1(r['rate_spread_gap_bps'])}** | {b1(r['interest_rate_gap_bps'])} | {b1(r['orig_pct_gap_bps'])} |"
+        )
+    lines += [
+        '',
+        '### 2a. Fintech vs. Non-Fintech Nonbanks by Borrower Group (baseline filters)',
+        '',
+        '| Dimension | Group | Fintech Loans | Nonbank Loans | Fintech Med Spread | Nonbank Med Spread | Spread Gap (bps) | Rate Gap (bps) | Orig Fee Gap (bps) | Status |',
+        '|---|---|---:|---:|---:|---:|---:|---:|---:|---|',
+    ]
+    for r in summary.get('nonbank_by_segment', []):
+        lines.append(
+            f"| `{r['dimension']}` | {r['group']} | {r['fintech_loans_rs']:,} | {r['comparator_loans_rs']:,} | "
+            f"{p3(r['fintech_median_rate_spread'])} | {p3(r['comparator_median_rate_spread'])} | "
+            f"**{b1(r['rate_spread_gap_bps'])}** | {b1(r['interest_rate_gap_bps'])} | {b1(r['orig_pct_gap_bps'])} | {r['status']} |"
         )
     lines += [
         '',

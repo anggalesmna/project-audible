@@ -200,7 +200,7 @@ def build_document_xml() -> str:
     ))
     parts.append(bullet_p(
         '5. Redesigned Dashboard & Added Nonbank Comparator (Sessions 2 & 3): ',
-        'Replaced a dense single-page draft with a clean 3-tab layout and visual IQR/bar comparisons. During peer review, rejected a false LLM claim that static HTML lacked data, fixed unverified README figures, and added a non-fintech nonbank (TYPE 40/41) comparator.'
+        'Replaced a dense single-page draft with a clean 3-tab layout and visual IQR/bar comparisons. During peer review, rejected a false LLM claim that static HTML lacked data, fixed unverified README figures, and added a non-fintech nonbank (TYPE 40/41) comparator. Its result (-1.2 bps) led the team to reframe the recommendation as a review benchmarked against nonbank peers.'
     ))
 
     # 3. Clear Human Ownership

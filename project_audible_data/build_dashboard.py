@@ -763,22 +763,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     <!-- 2. COMPACT HEADER & KEY POINTS -->
     <header class="header-card">
-      <h1 class="headline-title balance-heading">
-        Fintech Mortgages Are Priced +16.4 bps Higher on Median Rate Spread Than Traditional Bank Mortgages
+      <h1 id="headline-title" class="headline-title balance-heading">
+        Fintech vs. Bank Mortgage Pricing (2025 HMDA)
       </h1>
       <ul class="key-points" aria-label="Key takeaway points">
-        <li>
-          <span class="kp-tag">What:</span>
-          Fintech median rate spread is <strong>+16.4 bps higher</strong> than banks (<code>0.213%</code> vs. <code>0.049%</code>), alongside higher interest rates (<strong>+12.5 bps</strong>) and higher upfront fees (<strong>+37.2 bps</strong>).
-        </li>
-        <li>
-          <span class="kp-tag">So What:</span>
-          Fintech pricing is higher in <strong>all 16 of 16</strong> standard <code>DTI &times; CLTV</code> segments and <strong>12 of 14</strong> controlled Fintech lenders, reaching <strong>+28 to +32 bps higher</strong> when <code>CLTV &gt;95%</code>.
-        </li>
-        <li>
-          <span class="kp-tag">Now What:</span>
-          <strong>AFC should launch a member pricing review</strong> focused first on <strong>High-CLTV (&gt;95%)</strong> and <strong>Small-Loan (&le;$200k)</strong> segments.
-        </li>
+        <li><span class="kp-tag">What:</span> <span id="kp-what"></span></li>
+        <li><span class="kp-tag">So What:</span> <span id="kp-sowhat"></span></li>
+        <li><span class="kp-tag">Now What:</span> <span id="kp-nowwhat"></span></li>
       </ul>
     </header>
 
@@ -841,6 +832,28 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <!-- TAB 1: OVERVIEW -->
       <section id="panel-overview" role="tabpanel" aria-labelledby="tab-btn-overview">
         <div class="tab-panel-inner">
+          <div class="panel-card">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Benchmark Check: Banks vs. Other Nonbank Lenders</h2>
+                <p class="panel-subtitle" id="peer-subtitle"></p>
+              </div>
+            </div>
+            <div class="table-scroll" tabindex="0">
+              <table class="clean-table">
+                <caption>Fintech median minus comparator median, controlled baseline (valid borrower data, DTI &lt;50%). Grey = fewer than 100 loans per side or too few lenders.</caption>
+                <thead>
+                  <tr>
+                    <th scope="col" style="text-align:start;">Borrower group</th>
+                    <th scope="col">Rate-spread gap vs. banks</th>
+                    <th scope="col">Rate-spread gap vs. other nonbanks</th>
+                    <th scope="col">Fee gap vs. other nonbanks</th>
+                  </tr>
+                </thead>
+                <tbody id="peer-tbody"></tbody>
+              </table>
+            </div>
+          </div>
           <div class="panel-card">
             <div class="panel-header">
               <div>
@@ -1469,12 +1482,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById("lender-summary").innerHTML =
         `<strong>${ls.above_bank} of ${ls.total}</strong> Fintech lenders in the controlled sample have a median rate spread above the bank median ` +
         `(<strong>${ls.above_5bps} of ${ls.total}</strong> by 5 bps or more); equal-weighted lender-median gap is <strong>${fmtBps(ls.equal_weighted_gap_bps)}</strong>.`;
-      const gaps = DATA.robustness_checks.map((r) => r.rate_spread_gap_bps).filter((v) => v !== null);
+      const isPeerRow = (r) => r.slice.startsWith("Alternative comparator");
+      const gaps = DATA.robustness_checks.filter((r) => !isPeerRow(r))
+        .map((r) => r.rate_spread_gap_bps).filter((v) => v !== null);
       const base = DATA.headline_metrics.national_controlled_sample || {};
       const ci = base.lender_cluster_ci95_bps || DATA.headline_metrics.baseline_lender_cluster_ci95_bps;
+      const peer = DATA.robustness_checks.find(isPeerRow);
       document.getElementById("robust-summary").innerHTML =
-        `Gap ranges from <strong>${fmtBps(Math.min(...gaps))} to ${fmtBps(Math.max(...gaps))}</strong> across specifications` +
-        (ci && ci[0] !== null ? `; baseline lender-clustered 95% CI <strong>${fmtBps(ci[0])} to ${fmtBps(ci[1])}</strong>.` : '.');
+        `Versus banks, the gap stays between <strong>${fmtBps(Math.min(...gaps))} and ${fmtBps(Math.max(...gaps))}</strong> across sample definitions` +
+        (ci && ci[0] !== null ? ` (baseline lender-clustered 95% CI <strong>${fmtBps(ci[0])} to ${fmtBps(ci[1])}</strong>)` : '') + '.' +
+        (peer ? ` Versus other nonbank lenders (a different comparator) it is <strong>${fmtBps(peer.rate_spread_gap_bps)}</strong>.` : '');
 
       const robTbody = document.getElementById("robustness-tbody");
       robTbody.innerHTML = "";
@@ -1489,6 +1506,75 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         `;
         robTbody.appendChild(tr);
       });
+    }
+
+    const SEG_LABELS = {
+      "cltv|<=80%": "CLTV ≤80% (20%+ down)", "cltv|80.01%-90%": "CLTV 80–90%", "cltv|90.01%-95%": "CLTV 90–95%",
+      "cltv|>95%": "CLTV >95% (under 5% down)", "loan|<=$200k": "Loans ≤$200k", "loan|$200k-$350k": "Loans $200k–$350k",
+      "loan|$350k-$500k": "Loans $350k–$500k", "loan|>$500k": "Loans >$500k",
+    };
+    const DIM_KEY = { cltv_group: "cltv", loan_amount_group: "loan", income_group: "income", dti_group: "dti" };
+
+    function renderHeadline() {
+      const b = DATA.slices_data.slices["ALL|ALL|ALL"];
+      const nb = DATA.headline_metrics.national_vs_nonbank;
+      const cells = [];
+      ["<30%", "30%-<36%", "36%-43%", "44%-49%"].forEach((d) =>
+        ["<=80%", "80.01%-90%", "90.01%-95%", ">95%"].forEach((c) => cells.push(DATA.slices_data.slices[`ALL|${d}|${c}`])));
+      const higher = cells.filter((c) => c && c.ok && c.gap_rs >= 5).length;
+      const nbGap = nb ? nb.rate_spread_gap_bps : null;
+      const peerLike = nbGap !== null && nbGap < 5;
+
+      document.getElementById("headline-title").textContent = nbGap === null
+        ? `Fintech Mortgages Are Priced ${fmtBps(b.gap_rs)} Higher on Median Rate Spread Than Bank Mortgages`
+        : peerLike
+          ? `Fintech Mortgages Cost ${fmtBps(b.gap_rs)} More Than Bank Mortgages, in Line With Other Nonbank Lenders`
+          : `Fintech Mortgages Cost ${fmtBps(b.gap_rs)} More Than Banks and ${fmtBps(nbGap)} More Than Other Nonbanks`;
+
+      document.getElementById("kp-what").innerHTML =
+        `Fintech median rate spread is <strong>${fmtBps(b.gap_rs)}</strong> above banks (<code>${fmtPct(b.rs_f)}</code> vs. <code>${fmtPct(b.rs_b)}</code>), ` +
+        `with higher rates (<strong>${fmtBps(b.gap_ir)}</strong>) and upfront fees (<strong>${fmtBps(b.gap_oc)}</strong>), in <strong>${higher} of ${cells.length}</strong> DTI × CLTV segments.`;
+
+      document.getElementById("kp-sowhat").innerHTML = nbGap === null
+        ? "Comparison with other nonbank lenders not yet run."
+        : peerLike
+          ? `Against other nonbank lenders the gap is <strong>${fmtBps(nbGap)}</strong>: the premium reflects the nonbank model, not a fintech-specific markup. Fees remain <strong>${fmtBps(nb.orig_pct_gap_bps)}</strong> above nonbank peers.`
+          : `Even against other nonbank lenders fintech pricing is <strong>${fmtBps(nbGap)}</strong> higher, so the premium is not only a nonbank effect.`;
+
+      const pr = DATA.nonbank_priority;
+      let focus = "origination fees";
+      if (pr && pr.segments.length) {
+        const names = pr.segments.map((s) => `<strong>${s.label}</strong>`).join(" and ");
+        focus = pr.basis === "rate_spread" ? names : `fees in ${names}`;
+      }
+      document.getElementById("kp-nowwhat").innerHTML =
+        `<strong>AFC should launch a member pricing review benchmarked against nonbank peers</strong>, starting with ${focus}.`;
+    }
+
+    function renderPeerTable() {
+      const nb = DATA.headline_metrics.national_vs_nonbank;
+      const segs = DATA.nonbank_by_segment || [];
+      const tbody = document.getElementById("peer-tbody");
+      const b = DATA.slices_data.slices["ALL|ALL|ALL"];
+      const rows = [{ label: "All comparable loans", bank: b, peer: nb }];
+      segs.filter((r) => r.dimension === "cltv_group" || r.dimension === "loan_amount_group").forEach((r) => {
+        const key = `${DIM_KEY[r.dimension]}|${r.group}`;
+        rows.push({ label: SEG_LABELS[key] || r.group, bank: DATA.slices_data.bars[`ALL|${key}`], peer: r });
+      });
+      const cell = (v, ok, strong) => `<td style="${ok === false ? "color:var(--text-muted);" : ""}${strong ? "font-weight:800;" : ""}">${fmtBps(v)}</td>`;
+      tbody.innerHTML = rows.map((r) => `<tr><th scope="row">${r.label}</th>` +
+        cell(r.bank ? r.bank.gap_rs : null, r.bank ? r.bank.ok : false) +
+        cell(r.peer ? r.peer.rate_spread_gap_bps : null, r.peer ? r.peer.coverage_ok : false, true) +
+        cell(r.peer ? r.peer.orig_pct_gap_bps : null, r.peer ? r.peer.coverage_ok : false) + `</tr>`).join("");
+      const lenders = nb ? nb.comparator_lenders || nb.bank_lenders : null;
+      const loans = nb ? nb.comparator_loans_rs || nb.bank_loans_rs : null;
+      document.getElementById("peer-subtitle").innerHTML = nb
+        ? (nb.rate_spread_gap_bps < 5
+            ? `Fintech lenders price above banks but close to <strong>${lenders.toLocaleString()}</strong> other nonbank lenders`
+            : `Fintech lenders price above both banks and <strong>${lenders.toLocaleString()}</strong> other nonbank lenders`) +
+          ` (Philadelphia Fed TYPE 40/41; ${loans.toLocaleString()} loans).` +
+          (segs.length ? "" : " Segment rows appear after rerunning analyze_pricing.py.")
+        : "Nonbank comparison not yet run.";
     }
 
     function refreshAll() {
@@ -1529,6 +1615,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     });
 
     initDropdowns();
+    renderHeadline();
+    renderPeerTable();
     renderLendersAndRobustness();
     refreshAll();
   </script>
@@ -1537,30 +1625,48 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 """
 
 
-def main():
+def summary_fields(summary):
+    """Fields the dashboard takes from pricing_summary.json (analyze_pricing.py output)."""
+    return {
+        'headline_metrics': summary['headline_metrics'],
+        'nonbank_by_segment': summary.get('nonbank_by_segment', []),
+        'nonbank_priority': summary.get('nonbank_priority'),
+    }
+
+
+def main(argv=None):
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('--from-json', action='store_true',
+                        help='Rebuild the HTML from the saved dashboard_slices.json plus the current '
+                             'pricing_summary.json, without the loan-level CSV (for layout/text changes).')
+    args = parser.parse_args(argv)
     base_dir = Path(__file__).resolve().parent
     data_dir = base_dir / 'data' / '2025'
     clean_csv = data_dir / 'mortgages_2025_clean.csv'
     pricing_json = data_dir / 'analysis' / 'pricing_summary.json'
-
-    print('Computing interactive slice medians from loan records ...')
-    slices_data = compute_slices(clean_csv)
+    slices_path = data_dir / 'analysis' / 'dashboard_slices.json'
     summary = json.loads(pricing_json.read_text(encoding='utf-8'))
 
-    payload = {
-        'generated_at_utc': datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-        'headline_metrics': summary['headline_metrics'],
-        'robustness_checks': slices_data['robustness_checks'],
-        'fintech_lenders': slices_data['fintech_lenders'],
-        'lender_stats': slices_data['lender_stats'],
-        'slices_data': {
-            'states': slices_data['states'],
-            'slices': slices_data['slices'],
-            'bars': slices_data['bars'],
-        },
-    }
+    if args.from_json:
+        payload = json.loads(slices_path.read_text(encoding='utf-8'))
+        payload.update(summary_fields(summary))
+    else:
+        print('Computing interactive slice medians from loan records ...')
+        slices_data = compute_slices(clean_csv)
+        payload = {
+            'generated_at_utc': datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            **summary_fields(summary),
+            'robustness_checks': slices_data['robustness_checks'],
+            'fintech_lenders': slices_data['fintech_lenders'],
+            'lender_stats': slices_data['lender_stats'],
+            'slices_data': {
+                'states': slices_data['states'],
+                'slices': slices_data['slices'],
+                'bars': slices_data['bars'],
+            },
+        }
 
-    slices_path = data_dir / 'analysis' / 'dashboard_slices.json'
     slices_path.write_text(json.dumps(payload, separators=(',', ':')), encoding='utf-8')
 
     html_content = HTML_TEMPLATE.replace('__DASHBOARD_JSON__', json.dumps(payload, separators=(',', ':')))

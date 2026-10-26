@@ -12,10 +12,12 @@ Project Audible investigates whether online/Fintech mortgage lenders charge high
 
 Using the official **2025 FFIEC HMDA static snapshot** (1,508,076 eligible purchase loans) joined with the **Philadelphia Fed Lender File** and **NYU Stern (Fuster et al., 2019)** fintech classifications, the empirical findings demonstrate:
 
-> **Fintech Mortgages Are Priced +16.4 bps Higher on Median Rate Spread Than Traditional Bank Mortgages**  
+> **Fintech Mortgages Cost +16.4 bps More Than Bank Mortgages, in Line With Other Nonbank Lenders**  
 > In the controlled baseline (valid DTI, CLTV, income and loan amount; DTI below 50%; 511,199 loans), the Fintech median rate spread is **0.213%** (IQR: −0.053% to 0.518%; 173,033 loans, 14 lenders) compared with **0.049%** (IQR: −0.190% to 0.325%; 338,166 loans, 655 banks) for traditional banks. Fintech pricing is higher in **all 16 of 16** standard DTI × CLTV segments; 12 of 14 Fintech lenders sit above the bank median (11 of 14 by 5 bps or more). The unadjusted full sample gives +17.2 bps (lender-clustered 95% CI: +12.2 to +25.3 bps).
 
-**What the gap does and does not show.** Rate spread is APR − APOR, so it reflects observed pricing for similar observed borrowers, not lender intent. Public HMDA has no credit scores, and all 14 Fintech lenders are nonbanks, so `analyze_pricing.py` also reports Fintech vs. non-fintech nonbanks (Philadelphia Fed TYPE 40/41) to separate a fintech effect from a nonbank effect.
+**Versus other nonbanks, the gap largely disappears.** Against 600 non-fintech independent mortgage banks (Philadelphia Fed TYPE 40/41; 808,681 loans, same filters), the Fintech median rate spread is **−1.2 bps** (rate gap 0.0 bps; fee gap +6.3 bps). The premium points to the nonbank business model rather than a fintech-specific markup. Public HMDA has no credit scores, so these are observed pricing differences, not proof of intent.
+
+**Recommendation for AFC:** launch a voluntary member pricing review **benchmarked against nonbank peers as well as banks**, starting with the segments flagged by `analyze_pricing.py` (`nonbank_priority`) or, if none, origination fees.
 
 ---
 
@@ -54,7 +56,7 @@ The interactive dashboard is located at:
 `Submit/Project Audible Dashboard.html`
 
 ### Features:
-1. **Overview Tab**: Key executive takeaway (+16.4 bps higher), 4 summary KPI metric cards, and 16-cell Risk Matrix (DTI vs. CLTV) highlighting the Fintech pricing spread.
+1. **Overview Tab**: What → So What → Now What (computed from the data), 4 KPI cards, a benchmark table comparing Fintech with banks and with other nonbanks, and the 16-cell DTI × CLTV risk matrix.
 2. **Segment Drill-Down Tab**: Interactive 4-column filter slicers (DTI, CLTV, Income, Geography) with visual Paired Bar Comparison and Quartile Distribution (IQR) charts.
 3. **Lenders & Robustness Tab**: Every Fintech lender vs. the bank median, and the robustness table (baseline, Fintech vs. non-fintech nonbanks, incl. DTI ≥50%, site-built only, no review flags, unadjusted) with the baseline lender-clustered 95% CI.
 
@@ -81,6 +83,7 @@ python3 classify_lenders_nyu.py # Downloads the Philadelphia Fed lender file if 
 python3 clean_mortgages.py      # Cleans and bins data
 python3 analyze_pricing.py      # Computes statistics and robustness checks
 python3 build_dashboard.py      # Generates Submit/Project Audible Dashboard.html
+                                # (--from-json rebuilds the HTML from saved results without the loan-level CSV)
 
 # Rebuild the Word deliverables
 python3 build_position_memo.py

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the 2-page Position Memo in Submit/Project Audible Position Memo.docx.
+"""Generate the Position Memo (2 pages max) in Submit/Project Audible Position Memo.docx.
 
 Every number is read from the pipeline outputs, so the memo cannot drift from the dashboard:
   data/2025/analysis/dashboard_slices.json   (controlled baseline; same data as the dashboard)
@@ -29,7 +29,10 @@ ALERT = 'B91C1C'
 
 
 def bps(v):
-    return f'{v:+.1f} bps'
+    """Format like the dashboard (JavaScript toFixed rounds halves up; Python's format would round 12.25 to 12.2)."""
+    from decimal import Decimal, ROUND_HALF_UP
+    q = Decimal(repr(v)).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+    return f'{"+" if q > 0 else ""}{q} bps'
 
 
 def pct(v, d=3):
@@ -65,6 +68,14 @@ def facts(dash, summary, grid):
     else:
         ci, ci_label = hm['lender_cluster_ci95_bps'], 'lender-clustered 95% CI, full sample'
     nonbank = next((r for r in dash['robustness_checks'] if r['slice'].startswith(NONBANK_PREFIX)), None)
+    if nonbank is None and hm.get('national_vs_nonbank'):
+        nonbank = hm['national_vs_nonbank']
+    # Bank-comparator checks from both outputs, so the memo's range matches the dashboard's.
+    bank_specs = [r['rate_spread_gap_bps'] for r in summary.get('robustness_checks', []) + dash['robustness_checks']
+                  if not r['slice'].startswith(NONBANK_PREFIX) and r.get('rate_spread_gap_bps') is not None]
+    ex_rocket_nat = next((r['rate_spread_gap_bps'] for r in summary.get('robustness_checks', [])
+                          if 'excluding Rocket' in r['slice']), None)
+    nb_seg = {(r['dimension'], r['group']): r for r in summary.get('nonbank_by_segment', [])}
     rocket = next((r for r in lenders if r['lender_name'].upper().startswith('ROCKET')), None)
     at_parity = sorted((r for r in lenders if (r['gap_vs_bank_median_bps'] or 0) < 5),
                        key=lambda r: r['gap_vs_bank_median_bps'])
@@ -78,7 +89,9 @@ def facts(dash, summary, grid):
         'states_higher': sum(1 for s in states if s['ok'] and s['gap_rs'] >= 5), 'states_total': len(states),
         'state_min': min(s['gap_rs'] for s in states), 'state_max': max(s['gap_rs'] for s in states),
         'ls': ls, 'rocket': rocket, 'at_parity': at_parity, 'ci': ci, 'ci_label': ci_label,
-        'nonbank': nonbank,
+        'nonbank': nonbank, 'nb_seg': nb_seg, 'priority': summary.get('nonbank_priority'),
+        'bank_spec_range': (min(bank_specs), max(bank_specs)) if bank_specs else None,
+        'ex_rocket_nat': ex_rocket_nat,
         'seg': {
             'cltv_low': B['ALL|cltv|<=80%'], 'cltv_high': B['ALL|cltv|>95%'],
             'loan_small': B['ALL|loan|<=$200k'], 'inc_low': B['ALL|income|<=$75k'],
@@ -95,28 +108,36 @@ def t(text, bold=False, color=INK, italic=False):
     return r_xml(text, bold=bold, italic=italic, size_half_pt=BODY, color=color)
 
 
-def nonbank_runs(f):
+def nb_state(f):
+    """'pending' (check not run), 'peer' (fintech priced like other nonbanks) or 'fintech' (premium remains)."""
     nb = f['nonbank']
     if not nb or nb.get('rate_spread_gap_bps') is None:
-        return [t('PENDING — rerun analyze_pricing.py and build_dashboard.py, then rebuild this memo: '
-                  'the Fintech vs. non-fintech nonbank result is not in the current outputs.', bold=True, color=ALERT)]
-    g = nb['rate_spread_gap_bps']
-    head = (f'Against non-fintech independent mortgage banks ({nb["bank_lenders"]:,} lenders, '
-            f'{nb["bank_loans_rs"]:,} loans, same filters), the Fintech gap is {bps(g)}. ')
-    if g >= 0.75 * f['base']['gap_rs']:
-        tail = 'Most of the premium survives a nonbank-to-nonbank comparison, so it is not simply a bank-versus-nonbank funding difference.'
-    elif g >= 5:
-        tail = ('The premium shrinks but stays material, so part of it reflects nonbank business models and part is specific to '
-                'these fintech lenders. Some unlisted nonbanks also originate digitally, which biases this check toward zero.')
-    else:
-        tail = ('Against other nonbanks the premium largely disappears, so the gap is mainly a nonbank effect. Borrowers still '
-                'pay more than at banks, so the review stands, but members should be benchmarked against nonbank peers.')
-    return [t(head, bold=True), t(tail)]
+        return 'pending'
+    return 'peer' if nb['rate_spread_gap_bps'] < 5 else 'fintech'
+
+
+def pending(text):
+    return t(text, bold=True, color=ALERT)
+
+
+def focus_text(f):
+    """Where the review starts, from analyze_pricing.nonbank_priority (a stated rule, not chosen here)."""
+    pr = f['priority']
+    if not pr:
+        return 'origination fees', None
+    names = ' and '.join(s['label'] for s in pr['segments'])
+    if pr['basis'] == 'rate_spread':
+        return names, pr
+    if pr['basis'] == 'fees':
+        return f'origination fees, first in {names}', pr
+    return 'origination fees', pr
 
 
 def build_document_xml(f, date_text):
     b, s = f['base'], f['seg']
-    ls, rk = f['ls'], f['rocket']
+    ls, rk, nb = f['ls'], f['rocket'], f['nonbank']
+    state = nb_state(f)
+    focus, pr = focus_text(f)
     parts = []
     parts.append(p_xml([r_xml('FINTECH 590 — PROJECT AUDIBLE: POSITION MEMO', bold=True, size_half_pt=22)],
                        before=0, after=12, line=215))
@@ -134,85 +155,113 @@ def build_document_xml(f, date_text):
     ], before=0, after=40, line=205, bottom_border=True))
 
     # Recommendation first (Backwards First)
-    parts.append(section_heading('Recommendation: Yes — launch a member pricing review in Q1 2027, starting with low-down-payment and small loans'))
-    parts.append(para([
-        t('In 2025, borrowers paid more at fintech lenders than at banks for comparable observed loans. '),
-        t(f'The fintech median rate spread was {bps(b["gap_rs"])} higher ({pct(b["rs_f"])} vs. {pct(b["rs_b"])}), ', bold=True),
-        t(f'and the gap appears in all {f["cells_higher"]} of {f["cells_total"]} debt-to-income × loan-to-value groups '
-          f'and in all {f["states_higher"]} of the {f["states_total"]} largest states. Under the decision rule agreed in our pitch, '
-          'a broad and consistent premium calls for a review. AFC should invite members to explain the gap with their own '
-          'credit-score, rate-lock and fee data, beginning with borrowers putting less than 5% down and loans of $200k or less, '
-          'where the gap is largest. The review is diagnostic: a price gap alone does not justify telling any member to change prices.'),
-    ]))
+    parts.append(section_heading(f'Recommendation: Yes — a member pricing review benchmarked against nonbank peers, starting with {focus}'))
+    lead = [
+        t('In 2025, fintech borrowers paid more than bank borrowers with comparable observed profiles. '),
+        t(f'The fintech median rate spread was {bps(b["gap_rs"])} higher than at banks ({pct(b["rs_f"])} vs. {pct(b["rs_b"])}), ', bold=True),
+        t(f'in {"all " if f["cells_higher"] == f["cells_total"] else ""}{f["cells_higher"]} of {f["cells_total"]} debt-to-income × loan-to-value groups and {f["states_higher"]} of the '
+          f'{f["states_total"]} largest states. '),
+    ]
+    if state == 'peer':
+        lead += [
+            t(f'Fintech lenders, however, price in line with other nonbank lenders ({bps(nb["rate_spread_gap_bps"])}), ', bold=True),
+            t('so the premium points to the nonbank business model rather than a fintech-specific markup. '
+              f'AFC should run a voluntary review that benchmarks each member against nonbank peers as well as banks, starting with {focus}, '
+              f'where members still charge more than nonbank peers (fees {bps(nb["orig_pct_gap_bps"])}). '),
+        ]
+    elif state == 'fintech':
+        lead += [
+            t(f'Fintech lenders also price {bps(nb["rate_spread_gap_bps"])} above other nonbank lenders, ', bold=True),
+            t(f'so the premium is not just a nonbank effect. AFC should run a voluntary review benchmarked against both banks and nonbank peers, starting with {focus}. '),
+        ]
+    else:
+        lead += [pending('PENDING — rerun analyze_pricing.py, build_dashboard.py and this script: the nonbank benchmark is missing. ')]
+    lead.append(t('The review is diagnostic: a price gap alone does not justify telling any member to change prices.'))
+    parts.append(para(lead))
 
     # What
     parts.append(section_heading('What the data shows'))
     parts.append(bullet_p(
-        'The premium is real and not driven by one lender. ',
-        f'Sample: 2025 HMDA, conventional conforming 30-year fixed purchase loans; {b["nf"]:,} loans from {b["lf"]} fintech lenders '
-        f'(NYU Stern list) vs. {b["nb"]:,} from {b["lb"]} banks, with valid borrower data and DTI below 50% '
-        f'({f["ci_label"]}: {bps(f["ci"][0])} to {bps(f["ci"][1])}). {ls["above_bank"]} of {ls["total"]} fintech lenders price above '
-        f'the bank median ({ls["above_5bps"]} by 5 bps or more). Rocket Mortgage is '
-        f'{rk["share_of_fintech_loans_pct"]:.0f}% of fintech loans, yet without it every risk cell still shows at least '
-        f'{bps(f["ex_rocket_min"])}.' if rk and f['ex_rocket_min'] is not None else '', BODY))
+        'Versus banks, the premium is robust. ',
+        f'Sample: 2025 HMDA conventional conforming 30-year fixed purchase loans; {b["nf"]:,} loans from {b["lf"]} fintech lenders '
+        f'(NYU Stern list) vs. {b["nb"]:,} from {b["lb"]} banks, valid borrower data, DTI below 50% '
+        f'({f["ci_label"]}: {bps(f["ci"][0])} to {bps(f["ci"][1])}). {ls["above_bank"]} of {ls["total"]} fintech lenders price above the '
+        f'bank median. Rocket Mortgage is {rk["share_of_fintech_loans_pct"]:.0f}% of fintech loans; without it the gap is '
+        f'{bps(f["ex_rocket_nat"]) if f["ex_rocket_nat"] is not None else "unchanged"}.' if rk else '', BODY))
+    if state != 'pending':
+        parts.append(bullet_p(
+            'Versus other nonbanks, it largely disappears. ' if state == 'peer' else 'Versus other nonbanks, a premium remains. ',
+            f'Compared with {nb.get("comparator_lenders") or nb["bank_lenders"]:,} non-fintech nonbank lenders '
+            f'({nb.get("comparator_loans_rs") or nb["bank_loans_rs"]:,} loans, same filters), the fintech rate-spread gap is '
+            f'{bps(nb["rate_spread_gap_bps"])}, the rate gap {bps(nb["interest_rate_gap_bps"])} and the fee gap '
+            f'{bps(nb["orig_pct_gap_bps"])}. ' + ('Fees are the one gap that remains.' if state == 'peer' else ''), BODY))
     parts.append(bullet_p(
-        'Borrowers pay more in both rate and fees. ',
-        f'Median interest rate is {bps(b["gap_ir"])} higher and median origination charges are {bps(b["gap_oc"])} of the loan '
-        f'higher ({pct(b["oc_f"])} vs. {pct(b["oc_b"])}), roughly ${b["gap_oc"] * 30:,.0f} more upfront on a $300k loan. '
-        'Higher fees are not buying a lower rate, so the gap is not a points-for-rate trade-off.', BODY))
-    parts.append(bullet_p(
-        'The gap concentrates on borrowers with the least room to absorb it. ',
-        f'See the table: borrowers with under 5% down face {s["cltv_high"]["gap_rs"] / s["cltv_low"]["gap_rs"]:.1f} times the gap of '
-        f'borrowers with 20% down, and for borrowers earning $75k or less the premium comes through fees '
-        f'({bps(s["inc_low"]["gap_oc"])}) rather than the note rate ({bps(s["inc_low"]["gap_ir"])}).', BODY))
+        'Versus banks, the gap is largest for borrowers with the least room to absorb it. ',
+        f'Borrowers with under 5% down face {s["cltv_high"]["gap_rs"] / s["cltv_low"]["gap_rs"]:.1f} times the gap of borrowers with 20% down; '
+        f'for incomes of $75k or less it comes through fees ({bps(s["inc_low"]["gap_oc"])}), not the note rate ({bps(s["inc_low"]["gap_ir"])}).', BODY))
 
-    rows = [
-        ['All comparable loans (baseline)', f'{b["nf"]:,} / {b["nb"]:,}', bps(b['gap_rs']), bps(b['gap_ir']), bps(b['gap_oc'])],
-    ]
-    for label, key in [('Down payment 20%+ (CLTV ≤80%)', 'cltv_low'), ('Down payment <5% (CLTV >95%)', 'cltv_high'),
-                       ('Loan ≤$200k', 'loan_small'), ('Income ≤$75k', 'inc_low'), ('Income >$200k', 'inc_high')]:
+    def nb_cells(dim, group):
+        r = f['nb_seg'].get((dim, group))
+        if not r:
+            return ['rerun', 'rerun']
+        mark = '' if r['coverage_ok'] else ' (thin)'
+        return [bps(r['rate_spread_gap_bps']) + mark, bps(r['orig_pct_gap_bps']) + mark]
+
+    rows = [['All comparable loans', f'{b["nf"]:,} / {b["nb"]:,}', bps(b['gap_rs']),
+             bps(nb['rate_spread_gap_bps']) if state != 'pending' else 'rerun',
+             bps(nb['orig_pct_gap_bps']) if state != 'pending' else 'rerun']]
+    for label, key, dim, group in [('Down payment 20%+ (CLTV ≤80%)', 'cltv_low', 'cltv_group', '<=80%'),
+                                   ('Down payment <5% (CLTV >95%)', 'cltv_high', 'cltv_group', '>95%'),
+                                   ('Loan ≤$200k', 'loan_small', 'loan_amount_group', '<=$200k'),
+                                   ('Income ≤$75k', 'inc_low', 'income_group', '<=$75k'),
+                                   ('Income >$200k', 'inc_high', 'income_group', '>$200k')]:
         r = s[key]
-        rows.append([label, f'{r["nf"]:,} / {r["nb"]:,}', bps(r['gap_rs']), bps(r['gap_ir']), bps(r['gap_oc'])])
+        rows.append([label, f'{r["nf"]:,} / {r["nb"]:,}', bps(r['gap_rs'])] + nb_cells(dim, group))
     parts.append(table_xml(
-        ['Borrower group (dashboard: Overview tab)', 'Loans (Fintech / Bank)', 'Rate-spread gap', 'Rate gap', 'Fee gap (% of loan)'],
-        rows, [3700, 1900, 1500, 1300, 2112]))
-    parts.append(p_xml([r_xml('Gap = Fintech median − Bank median. Rate spread = APR − APOR (benchmark rate on the lock date). '
-                              'Source: FFIEC 2025 HMDA snapshot; full detail in the dashboard and technical memo.',
-                              italic=True, size_half_pt=16, color='475569')], before=20, after=20, line=200))
+        ['Borrower group', 'Loans (Fintech / Bank)', 'Rate-spread gap vs. banks', 'Rate-spread gap vs. nonbanks', 'Fee gap vs. nonbanks'],
+        rows, [3000, 1900, 1900, 1900, 1812]))
+    note = ('Gap = Fintech median − comparator median. Rate spread = APR − APOR (benchmark rate on the lock date). '
+            'Nonbanks = non-fintech independent mortgage banks (Philadelphia Fed TYPE 40/41). Source: FFIEC 2025 HMDA; '
+            'dashboard Overview tab and technical memo.')
+    if not f['nb_seg']:
+        note += ' "rerun" = segment benchmark not yet computed; rerun analyze_pricing.py.'
+    parts.append(p_xml([r_xml(note, italic=True, size_half_pt=16, color='475569')], before=20, after=20, line=200))
 
     # So what / Now what
     parts.append(section_heading('Why it matters to AFC, and what to do'))
     parts.append(para([
         t('So what: ', bold=True, color=ACCENT),
-        t('the largest premiums fall on borrowers with the least room to absorb extra cost: small down payments, small loans, '
-          'lower incomes. The gap is visible to anyone with public HMDA data, including regulators and the press. '
-          'Investigating it first lets AFC lead the answer instead of reacting to someone else’s.'),
+        t('anyone with public HMDA data, including regulators and the press, will compare fintech lenders with banks and see a '
+          'premium that is largest for small down payments and small loans. ' +
+          ('Our data suggest the fair comparison is with other nonbanks, where members look similar, but only member data can show that. '
+           if state == 'peer' else '') +
+          'Running the review first lets AFC lead the answer instead of reacting to someone else’s.'),
     ]))
-    parts.append(bullet_p('Step 1 (Q1 2027): ', 'invite participating members to join; publish this HMDA benchmark and the priority groups.', BODY))
-    parts.append(bullet_p('Step 2: ', 'each member decomposes its gap in the CLTV >95% and ≤$200k groups using credit score, LLPAs, '
-                          'rate-lock date, discount points and lender credits that public HMDA omits.', BODY))
-    parts.append(bullet_p('Step 3: ', 'AFC reports, in aggregate, how much of the gap credit risk explains and how much it does not; '
-                          'members act only on the unexplained part. If credit risk explains most of it, AFC publishes that as evidence.', BODY))
+    parts.append(bullet_p('Step 1 (Q1 2027): ', 'invite members to join; publish the HMDA benchmarks against banks and nonbank peers.', BODY))
+    parts.append(bullet_p('Step 2: ', f'each member explains its gap, starting with {focus}, using credit score, LLPAs, rate-lock date, '
+                          'discount points and lender credits that public HMDA omits.', BODY))
+    parts.append(bullet_p('Step 3: ', 'AFC reports, in aggregate, how much of the gap credit risk and the nonbank model explain; members act only on '
+                          'the unexplained part. If little is left, AFC publishes that as evidence.', BODY))
 
     # Limitations
     parts.append(section_heading('Strongest objection, biggest limitation, and why the position holds'))
+    if state == 'peer':
+        parts.append(bullet_p(
+            'Objection — "This is a nonbank pattern, so why review fintech members?" ',
+            'On the rate spread we agree, which is why the benchmark is nonbank peers and the review is voluntary and diagnostic. '
+            f'Fees still sit {bps(nb["orig_pct_gap_bps"])} above nonbank peers, and borrowers will still compare members with banks.', BODY))
     parts.append(bullet_p(
-        'Objection — "Fintech borrowers are riskier." ',
-        'Public HMDA has no credit scores, and risk-based pricing is steepest at high loan-to-value, exactly where the gap is largest. '
-        f'But the gap appears within every DTI × CLTV group and in {f["four_way"][0]} of {f["four_way"][1]} groups split four ways '
-        '(DTI, CLTV, income, loan size), and fees are higher too. Credit scores are what the review asks members to supply; '
-        'the objection is a reason to run the review, not to skip it.', BODY))
-    parts.append(bullet_p(
-        'Limitation — who counts as "fintech." ',
-        'We use the NYU Stern / Fuster et al. (2019) list of lenders with fully online applications, last updated in 2017; it matches 15 '
-        'of its 18 lenders in 2025, all of them nonbanks, while the comparator is banks only. ', BODY))
-    parts.append(p_xml([t('', bold=True)] + nonbank_runs(f), before=0, after=30, line=228, left_indent=180))
+        'Limitation — data and definitions. ',
+        'Public HMDA has no credit scores or exact lock dates, and risk-based pricing is steepest at high loan-to-value. "Fintech" is the '
+        'NYU Stern / Fuster et al. (2019) list of fully online lenders, last updated in 2017 (15 of 18 matched in 2025). Some unlisted '
+        'nonbanks also originate online, which pulls the fintech-versus-nonbank gap toward zero.', BODY))
+    rng = f['bank_spec_range']
     parts.append(bullet_p(
         'Why the recommendation still holds: ',
-        f'the result survives every robustness check run (excluding Rocket, site-built homes only, flagged loans removed, '
-        f'unadjusted sample), and {len(f["at_parity"])} fintech lenders ({", ".join(r["lender_name"] for r in f["at_parity"])}) price within 5 bps of '
-        f'the bank median or below it, so bank-level pricing is achievable online. '
-        'The recommended action is low-cost, voluntary and diagnostic. HMDA describes 2025 pricing, not current offers.', BODY))
+        (f'versus banks the gap stays between {bps(rng[0])} and {bps(rng[1])} across every sample definition we tested, and in '
+         f'{f["four_way"][0]} of {f["four_way"][1]} groups split four ways (DTI, CLTV, income, loan size). ' if rng else '') +
+        'The recommendation follows the evidence: it benchmarks members against their real peers instead of assuming a fintech markup, '
+        'it targets the gap that remains, and it is low-cost and voluntary. HMDA describes 2025 pricing, not current offers.', BODY))
 
     sect_pr = ('<w:sectPr><w:pgSz w:w="12240" w:h="15840"/>'
                '<w:pgMar w:top="720" w:right="864" w:bottom="720" w:left="864" w:header="432" w:footer="432" w:gutter="0"/>'
@@ -233,7 +282,8 @@ def main(date_text='October 26, 2026'):
         for item in zin.infolist():
             zout.writestr(item, doc_xml if item.filename == 'word/document.xml' else zin.read(item.filename))
     print(f'Wrote {out_docx} ({out_docx.stat().st_size / 1024:.1f} KiB)'
-          + ('' if f['nonbank'] else ' — WARNING: nonbank check missing; memo shows a red PENDING line.'))
+          + ('' if f['nonbank'] else ' — WARNING: nonbank check missing; memo shows a red PENDING line.')
+          + ('' if f['nb_seg'] else ' — NOTE: nonbank segment benchmark missing; rerun analyze_pricing.py.'))
 
 
 if __name__ == '__main__':
