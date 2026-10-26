@@ -1,24 +1,29 @@
-# Project Audible — Step 1 & 2 Pricing Analysis Report (2025 HMDA)
+# Project Audible — Pricing Analysis Report (2025 HMDA)
 
-Generated: 2026-10-23T01:03:34+00:00 by `analyze_pricing.py`.
+Generated: 2026-10-26T19:30:47+00:00 by `analyze_pricing.py`.
 
 ## 1. Headline Finding & AFC Decision Implication
 
-- **Unadjusted National Median Rate Spread**: Fintech **0.217%** (n = 175,754) vs. Bank Comparator **0.045%** (n = 346,999) -> **+17.2 bps** higher at Fintech (order-statistic 95% CI: `+16.9` to `+17.5` bps; lender-clustered 95% CI: `+12.2` to `+25.3` bps).
+- **Controlled baseline (headline; same sample as the dashboard)** — valid DTI, CLTV, income and loan amount, DTI <50%: Fintech median rate spread **0.213%** (n = 173,033; 14 lenders) vs. Bank **0.049%** (n = 338,166; 655 lenders) -> **+16.4 bps** (order-statistic 95% CI: `+16.0` to `+16.6` bps; lender-clustered 95% CI: `+11.5` to `+23.3` bps).
+- **Unadjusted full sample** (robustness): **+17.2 bps** (n = 175,754 vs. 346,999; lender-clustered 95% CI: `+12.2` to `+25.3` bps).
+- **Fintech effect or nonbank effect?** Against non-fintech independent mortgage banks (Philadelphia Fed TYPE 40/41, 600 lenders, n = 808,681) under the same baseline filters, the Fintech gap is **-1.2 bps** (fee gap +6.3 bps).
 - **Composition-Controlled 4-Way Cell Average Gap** (across 200 DTI x CLTV x Income x Loan Amount cells with >=25 loans per side): **+15.7 bps** (Fintech weights) / **+16.5 bps** (Bank weights). Fintech median spread is higher in **198 of 200** cells.
-- **DTI x CLTV Risk Matrix**: Of 20 cells, **17** meet the sufficient-coverage threshold (>=100 loans/side, >=3 Fintech lenders, >=10 Bank lenders). Fintech pricing is meaningfully higher (>= +5 bps) in **16 of 17** covered cells.
-- **Persistence Across Lenders**: **13 of 15** NYU Fintech lenders have a median rate spread above the Bank comparator median; equal-weighted lender-median gap is **+15.8 bps**.
-- **Supporting Measures**: Fintech median interest rate is **6.625%** vs. **6.500%** at banks (**+12.5 bps**), and Fintech median origination charges are **0.956%** of loan amount vs. **0.568%** at banks (**+38.8 bps**).
+- **DTI x CLTV Risk Matrix**: Fintech pricing is >= +5 bps higher in **16 of 16** standard (DTI <50%) cells. Including the thin DTI >=50% row, 17 of 20 cells meet coverage (>=100 loans/side, >=3 Fintech lenders, >=10 Bank lenders).
+- **Persistence Across Lenders (baseline)**: **12 of 14** NYU Fintech lenders have a median rate spread above the Bank median; **11 of 14** are at least 5 bps above. Equal-weighted lender-median gap is **+15.3 bps**.
+- **Supporting Measures (baseline)**: Fintech median interest rate is **6.625%** vs. **6.500%** at banks (**+12.5 bps**), and Fintech median origination charges are **0.947%** of loan amount vs. **0.575%** at banks (**+37.2 bps**).
 
 ## 2. Robustness Checks
 
-| Specification | Fintech Loans | Bank Loans | Fintech Med Spread | Bank Med Spread | Spread Gap (bps) | Rate Gap (bps) | Orig Fee Gap (bps) |
+| Specification | Fintech Loans | Comparator Loans | Fintech Med Spread | Comparator Med Spread | Spread Gap (bps) | Rate Gap (bps) | Orig Fee Gap (bps) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| National — all eligible loans | 175,754 | 346,999 | 0.217% | 0.045% | **+17.2** | +12.5 | +38.8 |
-| National — controlled sample (all 4 borrower vars valid) | 173,253 | 339,609 | 0.213% | 0.049% | **+16.4** | +12.5 | +37.3 |
+| Controlled baseline (4 borrower vars valid, DTI <50%) | 173,033 | 338,166 | 0.213% | 0.049% | **+16.4** | +12.5 | +37.2 |
+| Alternative comparator: Fintech vs non-fintech nonbanks (TYPE 40/41), baseline filters | 173,033 | 808,681 | 0.213% | 0.225% | **-1.2** | +0.0 | +6.3 |
+| Baseline excluding Rocket Mortgage (47% of Fintech loans) | 91,618 | 338,166 | 0.219% | 0.049% | **+17.0** | +12.5 | +24.9 |
+| Baseline excluding 21st Mortgage (manufactured-housing specialist) | 173,033 | 338,166 | 0.213% | 0.049% | **+16.4** | +12.5 | +37.2 |
+| Controlled sample incl. DTI >=50% | 173,253 | 339,609 | 0.213% | 0.049% | **+16.4** | +12.5 | +37.3 |
 | Site-built 1-unit properties only (excl. manufactured & multi-unit) | 169,156 | 338,811 | 0.205% | 0.043% | **+16.2** | +12.5 | +36.8 |
-| Excluding 21st Mortgage (manufactured-housing specialist) | 174,081 | 346,999 | 0.212% | 0.045% | **+16.7** | +12.5 | +37.4 |
 | Excluding all review-flagged loans | 175,540 | 346,049 | 0.217% | 0.046% | **+17.1** | +12.5 | +38.7 |
+| National — all eligible loans | 175,754 | 346,999 | 0.217% | 0.045% | **+17.2** | +12.5 | +38.8 |
 
 ## 3. Single-Dimension Borrower Group Comparisons
 
@@ -71,21 +76,20 @@ Generated: 2026-10-23T01:03:34+00:00 by `analyze_pricing.py`.
 
 | Fintech Lender | Loans | Share (%) | Med Rate Spread | Gap vs Bank Med (bps) | Med Interest Rate | Med Orig Charges (% Loan) |
 |---|---:|---:|---:|---:|---:|---:|
-| ROCKET MORTGAGE | 82,109 | 46.7% | 0.202% | **+15.7** | 6.625% | 1.080% |
-| GUARANTEED RATE, INC. | 27,081 | 15.4% | 0.212% | **+16.7** | 6.625% | 0.643% |
-| MOVEMENT MORTGAGE, LLC | 20,440 | 11.6% | 0.203% | **+15.8** | 6.625% | 0.844% |
-| loanDepot.com LLC | 15,776 | 9.0% | 0.059% | **+1.4** | 6.500% | 0.881% |
-| EVERETT FINANCIAL, INC. | 5,586 | 3.2% | 0.497% | **+45.2** | 6.875% | 1.552% |
-| ARK-LA-TEX FINANCIAL SERVICES LLC | 5,534 | 3.1% | 0.254% | **+20.9** | 6.625% | 0.558% |
-| American Neighborhood Mortgage Acceptance Company | 4,931 | 2.8% | 0.389% | **+34.4** | 6.750% | 1.058% |
-| Better Mortgage Corporation | 3,375 | 1.9% | 0.166% | **+12.1** | 6.625% | 0.854% |
-| ENVOY MORTGAGE, LTD | 2,770 | 1.6% | 0.278% | **+23.3** | 6.625% | 0.816% |
-| EVERGREEN MONEYSOURCE MORTGAGE COMPANY | 2,292 | 1.3% | 0.281% | **+23.6** | 6.625% | 1.474% |
-| Acrisure Mortgage, LLC | 2,027 | 1.1% | 0.032% | **-1.3** | 6.490% | 0.879% |
-| MORTGAGE INVESTORS GROUP | 1,828 | 1.0% | 0.220% | **+17.5** | 6.625% | 0.878% |
-| 21ST MORTGAGE | 1,673 | 0.9% | 2.152% | **+210.7** | 8.560% | 2.432% |
-| AMERISAVE MORTGAGE COMPANY | 315 | 0.2% | 0.318% | **+27.3** | 6.625% | 1.647% |
-| American Internet Mortgage, Inc. | 191 | 0.1% | -0.209% | **-25.4** | 6.375% | 0.337% |
+| ROCKET MORTGAGE | 81,415 | 47.0% | 0.205% | **+15.6** | 6.625% | 1.094% |
+| GUARANTEED RATE, INC. | 26,840 | 15.5% | 0.211% | **+16.2** | 6.625% | 0.643% |
+| MOVEMENT MORTGAGE, LLC | 20,341 | 11.8% | 0.204% | **+15.5** | 6.625% | 0.846% |
+| loanDepot.com LLC | 15,710 | 9.1% | 0.058% | **+0.9** | 6.500% | 0.881% |
+| EVERETT FINANCIAL, INC. | 5,561 | 3.2% | 0.496% | **+44.7** | 6.875% | 1.553% |
+| ARK-LA-TEX FINANCIAL SERVICES LLC | 5,524 | 3.2% | 0.254% | **+20.5** | 6.625% | 0.558% |
+| American Neighborhood Mortgage Acceptance Company | 4,911 | 2.8% | 0.389% | **+34.0** | 6.750% | 1.060% |
+| Better Mortgage Corporation | 3,370 | 1.9% | 0.166% | **+11.7** | 6.625% | 0.854% |
+| ENVOY MORTGAGE, LTD | 2,735 | 1.6% | 0.279% | **+23.0** | 6.625% | 0.815% |
+| EVERGREEN MONEYSOURCE MORTGAGE COMPANY | 2,283 | 1.3% | 0.282% | **+23.3** | 6.625% | 1.476% |
+| Acrisure Mortgage, LLC | 2,018 | 1.2% | 0.034% | **-1.6** | 6.490% | 0.876% |
+| MORTGAGE INVESTORS GROUP | 1,823 | 1.1% | 0.220% | **+17.1** | 6.625% | 0.879% |
+| AMERISAVE MORTGAGE COMPANY | 311 | 0.2% | 0.310% | **+26.1** | 6.625% | 1.647% |
+| American Internet Mortgage, Inc. | 191 | 0.1% | -0.209% | **-25.8** | 6.375% | 0.337% |
 
 ## 6. Top 15 Property States by Sample Volume ( plus NC)
 
