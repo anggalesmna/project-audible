@@ -5,10 +5,44 @@ from pathlib import Path
 
 import pandas as pd
 
-from classify_lenders_nyu import LOAN_LABELS, group_for, join_loans, match_nyu
+import io
+
+from classify_lenders_nyu import LOAN_LABELS, fetch_reference, group_for, join_loans, match_nyu
+
+
+class _FakeResponse(io.BytesIO):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
 
 
 class ClassificationTests(unittest.TestCase):
+    def test_fetch_reference_downloads_once_and_never_overwrites(self):
+        calls = []
+
+        def opener(request, timeout):
+            calls.append(request.full_url)
+            return _FakeResponse(b'xlsx-bytes')
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'raw' / 'ref.xlsx'
+            self.assertTrue(fetch_reference(target, url='https://example.test/ref.xlsx', opener=opener))
+            self.assertEqual(target.read_bytes(), b'xlsx-bytes')
+            self.assertFalse(fetch_reference(target, url='https://example.test/ref.xlsx', opener=opener))
+            self.assertEqual(len(calls), 1)
+
+    def test_fetch_reference_removes_partial_file_on_failure(self):
+        def opener(request, timeout):
+            return _FakeResponse(b'')
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'ref.xlsx'
+            with self.assertRaisesRegex(ValueError, 'empty'):
+                fetch_reference(target, url='https://example.test/ref.xlsx', opener=opener)
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
     def test_nonlisted_nonbank_is_not_a_bank_or_proven_nonfintech(self):
         self.assertEqual(group_for(False, 40), 'Other lender')
         self.assertEqual(group_for(False, 11), 'Other lender')

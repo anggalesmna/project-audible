@@ -48,6 +48,32 @@ def sha256(path):
     return digest.hexdigest()
 
 
+def fetch_reference(path, url=FED_DOWNLOAD, opener=None):
+    """Download the Philadelphia Fed lender file once if it is not already on disk.
+
+    The file is gitignored (large binary), so a fresh clone must fetch it before
+    classification can run. An existing file is never overwritten.
+    """
+    path = Path(path)
+    if path.exists():
+        return False
+    import urllib.request
+    path.parent.mkdir(parents=True, exist_ok=True)
+    request = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (academic research; Duke FinTech)'})
+    tmp = path.with_suffix(path.suffix + '.part')
+    try:
+        with (opener or urllib.request.urlopen)(request, timeout=120) as response, tmp.open('wb') as out:
+            shutil.copyfileobj(response, out)
+        if tmp.stat().st_size == 0:
+            raise ValueError('Downloaded Philadelphia Fed file is empty')
+        os.replace(tmp, path)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
+    print(f'Downloaded Philadelphia Fed lender file to {path} (sha256 {sha256(path)[:12]}...)')
+    return True
+
+
 def write_csv(path, rows, fields):
     tmp = path.with_suffix(path.suffix + '.tmp')
     with tmp.open('w', encoding='utf-8', newline='') as stream:
@@ -151,6 +177,10 @@ def main():
     out = args.output_dir or data
     reference = args.institution_reference or data / 'raw' / 'hmda_lender_2018_2025_philadelphia_fed.xlsx'
     out.mkdir(parents=True, exist_ok=True)
+    if args.institution_reference is None:
+        fetch_reference(reference)
+    elif not reference.exists():
+        raise SystemExit(f'Institution reference not found: {reference}')
     class_path = out / f'lender_classification_{args.year}.csv'
     if class_path.exists():
         existing = pd.read_csv(class_path, dtype=str, keep_default_na=False)

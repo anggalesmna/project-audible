@@ -128,11 +128,11 @@ def build_document_xml() -> str:
     ], before=0, after=12, line=215))
     parts.append(p_xml([
         r_xml('Author & Human Owner: ', bold=True, size_half_pt=18, color='B45309'),
-        r_xml('Angga Lesmana   |   ', size_half_pt=18, color='334155'),
+        r_xml('Angga Lesmana (reviewer: Violla Tania)   |   ', size_half_pt=18, color='334155'),
         r_xml('Topic: ', bold=True, size_half_pt=18, color='B45309'),
         r_xml('Fintech vs. Bank Mortgage Pricing (AFC)   |   ', size_half_pt=18, color='334155'),
         r_xml('Date: ', bold=True, size_half_pt=18, color='B45309'),
-        r_xml('October 22, 2026', size_half_pt=18, color='334155'),
+        r_xml('October 22–26, 2026', size_half_pt=18, color='334155'),
     ], before=0, after=36, line=205, bottom_border=True))
 
     # 1. Complete Inventory & Prompts/Outputs Recorded (Rubric Criteria 1 & 2: 11 pts)
@@ -170,6 +170,12 @@ def build_document_xml() -> str:
                 '"Buat 3 tab... key point buat straightforward... yang DTI > 50% ini aga misleading ga si? diskusi dulu... ini narasinya tetep pake yang 17.2 bps? bukannya kalau di takeout cuma jadi 16.4 bps?" -> "Opsi A aja yang pake Definisi #4"',
                 'analyze_pricing.py, build_dashboard.py, build_technical_memo.py, Submit/Project Audible Dashboard.html, and Submit/Project Audible Technical Memo.docx.'
             ],
+            [
+                '6. Teammate Review & Completion (Oct 25, 2026, 15:32–21:45; run by teammate Violla Tania)',
+                'Claude (claude.ai), Claude Opus 5.5 (claude-opus-5-5)',
+                '"Cek github ini" -> "untuk poin 3 dashboard saya konsisten? bagian mana yang kamu maksud? ... daftar NYU yang dimaksud itu apa" -> "sebagai rekan se tim Angga dan juga challenger ... perbaiki dan lengkapi semua hal yang diperlukan untuk project ini"',
+                'Review findings; README fixes; Philadelphia Fed auto-download (classify_lenders_nyu.py); baseline-aligned analyze_pricing.py with Fintech vs. non-fintech nonbank check; build_position_memo.py and Submit/Project Audible Position Memo.docx; new tests (test_build_dashboard.py and additions).'
+            ],
         ],
         col_widths=[1650, 1850, 3850, 3150],
     ))
@@ -201,6 +207,11 @@ def build_document_xml() -> str:
         'I rejected the LLM\'s initial single-page dashboard because it was overly dense, included an unnecessary Presentation Mode button, buried key takeaways in wordy boxes, showed redundant robustness rows (Ex-Rocket, Ex-Top-2, Common Subset), and used a plain text table for the Selected Segment drill-down. I directed a clean 3-tab layout with minimalist top tabs, a full-width balanced slicer bar, direct "higher" wording instead of "premium", and an IQR (p25–p75) + paired-bar visual comparison card.'
     ))
 
+    parts.append(bullet_p(
+        '7. Teammate Challenge: Caught a False LLM Finding and a Fabricated README Headline (Session 3): ',
+        'Claude reported that the dashboard showed +17.2 bps and 522,753 loans next to the +16.4 bps headline. Violla checked the live dashboard and showed it was consistent; Claude confirmed it had read the static HTML without running JavaScript, where those values are placeholders replaced on load, and withdrew the finding. Claude also found that the README headline (0.750% vs. 0.586%, "14 of 16" segments) matched no pipeline output; it was replaced with the verified 0.213% vs. 0.049% and 16 of 16. Because the data hosts were blocked in Claude\'s workspace, every new number (nonbank comparator, baseline CI) is produced only by rerunning the pipeline locally; the position memo prints a red PENDING line until then, and no number was typed in by the LLM.'
+    ))
+
     # 3. Clear Human Ownership (Rubric Criterion 4: 3 pts)
     parts.append(section_heading('3. Clear Human Ownership (Decisions and Numbers Verified by Human)'))
     parts.append(bullet_p(
@@ -210,6 +221,10 @@ def build_document_xml() -> str:
     parts.append(bullet_p(
         'Final Numbers & Visuals Verified by Human: ',
         'Personally verified all headline and segment metrics reported in the dashboard and memos: 1,508,076 total conforming loans extracted; 511,199 controlled comparison loans (173,033 Fintech across 14 lenders vs. 338,166 Bank across 655 lenders); +16.4 bps median rate-spread gap (0.213% vs. 0.049%); +12.5 bps median interest-rate gap (6.625% vs. 6.500%); +37.2 bps median upfront origination-fee gap (0.947% vs. 0.575%); Fintech pricing higher in 16 of 16 standard DTI x CLTV segments (peaking at +27.9 to +31.6 bps in CLTV >95%) and 12 of 14 controlled Fintech lenders.'
+    ))
+    parts.append(bullet_p(
+        'Session 3 Ownership: ',
+        'Violla Tania directed the review, rejected the false dashboard finding, and approved the nonbank robustness check and the position-memo recommendation. Angga Lesmana reruns the pipeline, verifies the nonbank comparator and baseline CI against the dashboard, and signs off on the final position memo before submission.'
     ))
 
     sect_pr = (

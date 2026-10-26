@@ -63,6 +63,11 @@ python3 classify_lenders_nyu.py
 python3 -m unittest -v test_classify_lenders_nyu.py
 ```
 
+If `data/2025/raw/hmda_lender_2018_2025_philadelphia_fed.xlsx` is missing (it is
+gitignored), the script downloads it once from the Philadelphia Fed and never
+overwrites an existing copy. If the download is blocked, save the workbook there
+manually or pass `--institution-reference`.
+
 Paths default to `data/2025` relative to the script. To use other paths:
 
 ```sh

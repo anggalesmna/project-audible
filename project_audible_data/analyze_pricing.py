@@ -12,7 +12,10 @@ Writes to data/<year>/analysis/:
   by_four_way_cells.csv           320-cell DTI x CLTV x Income x Loan Amount controlled cells
   by_state.csv                    State-level pricing comparisons
   by_fintech_lender.csv           All 15 NYU Fintech lenders compared to Bank benchmark
-  robustness_checks.csv           Baseline vs Ex-Rocket, Ex-Top-2, No-Review-Flags, Common-Subset
+  robustness_checks.csv           Baseline vs alternative samples and the non-fintech nonbank comparator
+
+Headline sample ("controlled baseline"): Fintech vs Bank comparator loans with valid rate spread,
+DTI, CLTV, income and loan amount, and DTI below 50%. This is the same sample the dashboard uses.
 
 Standard library only (Python 3.10+).
 """
@@ -39,6 +42,32 @@ MIN_LENDERS_FINTECH = 3
 MIN_LENDERS_BANK = 10
 MEANINGFUL_GAP_BPS = 5.0
 ROCKET_LEI = '549300FGXN1K3HLB1R50'
+TWENTY_FIRST_LEI = '549300XQVJ1XBNFA5536'
+DTI_STANDARD_ORDER = DTI_ORDER[:4]  # conforming underwriting cap: DTI below 50%
+# Philadelphia Fed TYPE codes for independent mortgage banks (nonbanks).
+NONBANK_TYPE_CODES = {'40', '41'}
+BASELINE_LABEL = 'Controlled baseline (4 borrower vars valid, DTI <50%)'
+
+
+def comparison_role(row):
+    """Return 'fintech', 'bank', 'nonbank' or None for one cleaned loan row.
+
+    'nonbank' = independent mortgage banks NOT on the NYU list. It is used only as an
+    alternative comparator, to test whether the gap is a fintech effect or a nonbank effect.
+    """
+    group = row['lender_type']
+    if group == 'Fintech':
+        return 'fintech'
+    if group == 'Bank comparator':
+        return 'bank'
+    if group == 'Other lender' and row.get('institution_type_code', '').strip() in NONBANK_TYPE_CODES:
+        return 'nonbank'
+    return None
+
+
+def in_baseline(row):
+    """Controlled baseline: all borrower variables valid and DTI below 50%."""
+    return row['elig_controlled'] == '1' and row['dti_group'] in DTI_STANDARD_ORDER
 
 
 def utc_now():
@@ -174,7 +203,7 @@ def write_csv(path, rows, fieldnames=None):
     fields = fieldnames or list(rows[0].keys())
     tmp = path.with_suffix(path.suffix + '.tmp')
     with tmp.open('w', encoding='utf-8', newline='') as f:
-        w = csv.DictWriter(f, fieldnames=fields)
+        w = csv.DictWriter(f, fieldnames=fields, restval='')
         w.writeheader()
         w.writerows(rows)
     os.replace(tmp, path)
@@ -250,7 +279,14 @@ def cluster_bootstrap_ci_bps(lender_rs_f, lender_rs_b, iterations=300, seed=42):
 
 def analyze(clean_csv_path, out_dir):
     national_all = Bucket()
-    national_ctrl = Bucket()
+    national_ctrl = Bucket()          # controlled baseline (DTI <50%): headline sample
+    ctrl_incl_dti50 = Bucket()        # controlled incl. DTI >=50% (robustness)
+    rob_vs_nonbank = Bucket()         # Fintech vs non-fintech independent mortgage banks
+    rob_base_no_21st = Bucket()
+    rob_base_no_rocket = Bucket()
+    base_rs_f = defaultdict(lambda: array('d'))
+    base_rs_b = defaultdict(lambda: array('d'))
+    base_lenders = {}
     rob_no_rocket = Bucket()
     rob_no_top2 = Bucket()
     rob_no_21st = Bucket()
@@ -281,17 +317,43 @@ def analyze(clean_csv_path, out_dir):
     with clean_csv_path.open(newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for i, row in enumerate(reader, 1):
-            if row['in_main_comparison'] != '1':
+            role = comparison_role(row)
+            if role is None:
                 continue
-            is_fintech = row['lender_type'] == 'Fintech'
+            is_fintech = role == 'fintech'
             lei = row['lei']
             lender_name = row['lender_name']
-            if is_fintech:
-                fintech_volume[lei] += 1
-
             rs = float(row['rate_spread_num']) if row['elig_rate_spread'] == '1' else None
             ir = float(row['interest_rate_num']) if row['elig_interest_rate'] == '1' else None
             oc = float(row['orig_charge_pct']) if row['elig_orig_pct'] == '1' else None
+            baseline = in_baseline(row)
+
+            # Alternative comparator: Fintech vs non-fintech nonbanks (same baseline filters)
+            if baseline and role in ('fintech', 'nonbank'):
+                rob_vs_nonbank.add(is_fintech, lei, rs, ir, oc)
+            if role == 'nonbank':
+                continue
+
+            if is_fintech:
+                fintech_volume[lei] += 1
+
+            if baseline:
+                national_ctrl.add(is_fintech, lei, rs, ir, oc)
+                if lei != TWENTY_FIRST_LEI:
+                    rob_base_no_21st.add(is_fintech, lei, rs, ir, oc)
+                if lei != ROCKET_LEI:
+                    rob_base_no_rocket.add(is_fintech, lei, rs, ir, oc)
+                if rs is not None:
+                    (base_rs_f if is_fintech else base_rs_b)[lei].append(rs)
+                if is_fintech:
+                    lbb = base_lenders.setdefault(lei, {
+                        'lei': lei, 'lender_name': lender_name,
+                        'rs': array('d'), 'ir': array('d'), 'oc': array('d'), 'loans': 0,
+                    })
+                    lbb['loans'] += 1
+                    for key, val in (('rs', rs), ('ir', ir), ('oc', oc)):
+                        if val is not None:
+                            lbb[key].append(val)
 
             national_all.add(is_fintech, lei, rs, ir, oc)
 
@@ -345,7 +407,7 @@ def analyze(clean_csv_path, out_dir):
                 cltv_g = row['cltv_group']
                 inc_g = row['income_group']
                 loan_g = row['loan_amount_group']
-                national_ctrl.add(is_fintech, lei, rs, ir, oc)
+                ctrl_incl_dti50.add(is_fintech, lei, rs, ir, oc)
                 if lei != ROCKET_LEI:
                     rob_ctrl_no_rocket.add(is_fintech, lei, rs, ir, oc)
                 if (dti_g, cltv_g) in grid_dti_cltv:
@@ -364,24 +426,36 @@ def analyze(clean_csv_path, out_dir):
     nat_all_sum['order_stat_ci95_bps'] = [ci_lo, ci_hi]
     nat_all_sum['lender_cluster_ci95_bps'] = [cl_lo, cl_hi]
 
-    nat_ctrl_sum = national_ctrl.summarize({'slice': 'National — controlled sample (all 4 borrower vars valid)'})
+    nat_ctrl_sum = national_ctrl.summarize({'slice': BASELINE_LABEL})
+    base_ci_lo, base_ci_hi = bootstrap_ci_bps(sorted(national_ctrl.rs_f), sorted(national_ctrl.rs_b))
+    base_cl_lo, base_cl_hi = cluster_bootstrap_ci_bps(base_rs_f, base_rs_b)
+    nat_ctrl_sum['order_stat_ci95_bps'] = [base_ci_lo, base_ci_hi]
+    nat_ctrl_sum['lender_cluster_ci95_bps'] = [base_cl_lo, base_cl_hi]
 
-    # Lender-level medians (each lender weighted equally)
-    fintech_lender_medians = [median(v) for v in lender_rs_f.values() if len(v) >= 10]
-    bank_lender_medians = [median(v) for v in lender_rs_b.values() if len(v) >= 10]
+    # Lender-level medians in the baseline (each lender weighted equally)
+    fintech_lender_medians = [median(v) for v in base_rs_f.values() if len(v) >= 10]
+    bank_lender_medians = [median(v) for v in base_rs_b.values() if len(v) >= 10]
     equal_lender_gap_bps = r2(100.0 * (median(fintech_lender_medians) - median(bank_lender_medians)))
 
+    nonbank_sum = rob_vs_nonbank.summarize({
+        'slice': 'Alternative comparator: Fintech vs non-fintech nonbanks (TYPE 40/41), baseline filters',
+        'comparator': 'Non-fintech nonbank',
+    })
     robustness_rows = [
-        nat_all_sum,
-        nat_ctrl_sum,
+        dict(nat_ctrl_sum),
+        nonbank_sum,
+        rob_base_no_rocket.summarize({'slice': 'Baseline excluding Rocket Mortgage (47% of Fintech loans)'}),
+        rob_base_no_21st.summarize({'slice': 'Baseline excluding 21st Mortgage (manufactured-housing specialist)'}),
+        ctrl_incl_dti50.summarize({'slice': 'Controlled sample incl. DTI >=50%'}),
         rob_site_built_1unit.summarize({'slice': 'Site-built 1-unit properties only (excl. manufactured & multi-unit)'}),
-        rob_no_21st.summarize({'slice': 'Excluding 21st Mortgage (manufactured-housing specialist)'}),
         rob_no_flags.summarize({'slice': 'Excluding all review-flagged loans'}),
+        dict(nat_all_sum),
     ]
     for r in robustness_rows:
         r.pop('order_stat_ci95_bps', None)
         r.pop('lender_cluster_ci95_bps', None)
-    write_csv(out_dir / 'robustness_checks.csv', robustness_rows)
+    rob_fields = list(dict.fromkeys(k for r in robustness_rows for k in r))
+    write_csv(out_dir / 'robustness_checks.csv', robustness_rows, rob_fields)
 
     # 2. Single-dimension borrower groups
     single_dim_rows = []
@@ -448,11 +522,11 @@ def analyze(clean_csv_path, out_dir):
     write_csv(out_dir / 'by_state.csv', state_rows)
 
     # 6. Individual Fintech lenders vs National Bank Median
-    bank_nat_rs = nat_all_sum['bank_median_rate_spread']
-    bank_nat_ir = nat_all_sum['bank_median_interest_rate']
-    bank_nat_oc = nat_all_sum['bank_median_orig_pct']
+    bank_nat_rs = nat_ctrl_sum['bank_median_rate_spread']
+    bank_nat_ir = nat_ctrl_sum['bank_median_interest_rate']
+    bank_nat_oc = nat_ctrl_sum['bank_median_orig_pct']
     fintech_lender_rows = []
-    for lei, lb in lender_buckets.items():
+    for lei, lb in base_lenders.items():
         rs_s = sorted(lb['rs'])
         med_rs = quantile(rs_s, 0.5)
         med_ir = median(lb['ir'])
@@ -461,7 +535,7 @@ def analyze(clean_csv_path, out_dir):
             'lei': lei,
             'lender_name': lb['lender_name'],
             'total_loans': lb['loans'],
-            'share_of_fintech_loans_pct': r2(100.0 * lb['loans'] / national_all.loans_f),
+            'share_of_fintech_loans_pct': r2(100.0 * lb['loans'] / national_ctrl.loans_f),
             'loans_with_rate_spread': len(rs_s),
             'median_rate_spread': r4(med_rs),
             'gap_vs_bank_median_bps': r2(100.0 * (med_rs - bank_nat_rs)) if med_rs is not None else None,
@@ -477,7 +551,11 @@ def analyze(clean_csv_path, out_dir):
 
     cov_grid = [r for r in grid_rows if r['coverage_ok']]
     cov_grid_fintech_higher = [r for r in cov_grid if r['rate_spread_gap_bps'] >= MEANINGFUL_GAP_BPS]
+    std_grid = [r for r in grid_rows if r['dti_group'] in DTI_STANDARD_ORDER]
+    std_grid_higher = [r for r in std_grid if r['coverage_ok'] and r['rate_spread_gap_bps'] >= MEANINGFUL_GAP_BPS]
     fintech_lenders_above_bank = sum(1 for r in fintech_lender_rows if (r['gap_vs_bank_median_bps'] or 0) > 0)
+    fintech_lenders_above_5bps = sum(1 for r in fintech_lender_rows
+                                     if (r['gap_vs_bank_median_bps'] or 0) >= MEANINGFUL_GAP_BPS)
 
     summary = {
         'generated_at_utc': utc_now(),
@@ -496,10 +574,15 @@ def analyze(clean_csv_path, out_dir):
         'headline_metrics': {
             'national_unadjusted': nat_all_sum,
             'national_controlled_sample': nat_ctrl_sum,
+            'national_vs_nonbank': nonbank_sum,
             'order_stat_ci95_bps': [ci_lo, ci_hi],
             'lender_cluster_ci95_bps': [cl_lo, cl_hi],
+            'baseline_order_stat_ci95_bps': [base_ci_lo, base_ci_hi],
+            'baseline_lender_cluster_ci95_bps': [base_cl_lo, base_cl_hi],
             'equal_weighted_lender_median_gap_bps': equal_lender_gap_bps,
             'fintech_lenders_above_bank_median': f'{fintech_lenders_above_bank} of {len(fintech_lender_rows)}',
+            'fintech_lenders_above_bank_5bps': f'{fintech_lenders_above_5bps} of {len(fintech_lender_rows)}',
+            'standard_dti_cltv_cells_fintech_higher_5bps': f'{len(std_grid_higher)} of {len(std_grid)}',
             'dti_cltv_cells_total': len(grid_rows),
             'dti_cltv_cells_sufficient_coverage': len(cov_grid),
             'dti_cltv_cells_fintech_higher_5bps': len(cov_grid_fintech_higher),
@@ -523,47 +606,62 @@ def analyze(clean_csv_path, out_dir):
 
 
 def write_markdown_report(path, summary, state_rows):
+    def p3(v):
+        return 'n/a' if v is None else f'{v:.3f}%'
+
+    def b1(v):
+        return 'n/a' if v is None else f'{v:+.1f}'
+
     hm = summary['headline_metrics']
     nat = hm['national_unadjusted']
+    base = hm['national_controlled_sample']
+    nb = hm['national_vs_nonbank']
+    def ci(pair):
+        return f"`{pair[0]:+.1f}` to `{pair[1]:+.1f}` bps" if pair and None not in pair else 'n/a'
     lines = [
-        '# Project Audible — Step 1 & 2 Pricing Analysis Report (2025 HMDA)',
+        '# Project Audible — Pricing Analysis Report (2025 HMDA)',
         '',
         f"Generated: {summary['generated_at_utc']} by `analyze_pricing.py`.",
         '',
         '## 1. Headline Finding & AFC Decision Implication',
         '',
-        f"- **Unadjusted National Median Rate Spread**: Fintech **{nat['fintech_median_rate_spread']:.3f}%** "
-        f"(n = {nat['fintech_loans_rs']:,}) vs. Bank Comparator **{nat['bank_median_rate_spread']:.3f}%** "
-        f"(n = {nat['bank_loans_rs']:,}) -> **+{nat['rate_spread_gap_bps']:.1f} bps** higher at Fintech "
-        f"(order-statistic 95% CI: `{hm['order_stat_ci95_bps'][0]:+.1f}` to `{hm['order_stat_ci95_bps'][1]:+.1f}` bps; "
-        f"lender-clustered 95% CI: `{hm['lender_cluster_ci95_bps'][0]:+.1f}` to `{hm['lender_cluster_ci95_bps'][1]:+.1f}` bps).",
+        f"- **Controlled baseline (headline; same sample as the dashboard)** — valid DTI, CLTV, income and loan amount, "
+        f"DTI <50%: Fintech median rate spread **{p3(base['fintech_median_rate_spread'])}** "
+        f"(n = {base['fintech_loans_rs']:,}; {base['fintech_lenders']} lenders) vs. Bank **{p3(base['bank_median_rate_spread'])}** "
+        f"(n = {base['bank_loans_rs']:,}; {base['bank_lenders']} lenders) -> **{b1(base['rate_spread_gap_bps'])} bps** "
+        f"(order-statistic 95% CI: {ci(hm['baseline_order_stat_ci95_bps'])}; "
+        f"lender-clustered 95% CI: {ci(hm['baseline_lender_cluster_ci95_bps'])}).",
+        f"- **Unadjusted full sample** (robustness): **{b1(nat['rate_spread_gap_bps'])} bps** "
+        f"(n = {nat['fintech_loans_rs']:,} vs. {nat['bank_loans_rs']:,}; lender-clustered 95% CI: {ci(hm['lender_cluster_ci95_bps'])}).",
+        f"- **Fintech effect or nonbank effect?** Against non-fintech independent mortgage banks (Philadelphia Fed TYPE 40/41, "
+        f"{nb['bank_lenders']} lenders, n = {nb['bank_loans_rs']:,}) under the same baseline filters, the Fintech gap is "
+        f"**{b1(nb['rate_spread_gap_bps'])} bps** (fee gap {b1(nb['orig_pct_gap_bps'])} bps).",
         f"- **Composition-Controlled 4-Way Cell Average Gap** (across {hm['four_way_cells_min25_per_side']} "
         f"DTI x CLTV x Income x Loan Amount cells with >=25 loans per side): "
-        f"**+{hm['four_way_reweighted_gap_bps_fintech_weights']:.1f} bps** (Fintech weights) / "
-        f"**+{hm['four_way_reweighted_gap_bps_bank_weights']:.1f} bps** (Bank weights). "
+        f"**{b1(hm['four_way_reweighted_gap_bps_fintech_weights'])} bps** (Fintech weights) / "
+        f"**{b1(hm['four_way_reweighted_gap_bps_bank_weights'])} bps** (Bank weights). "
         f"Fintech median spread is higher in **{hm['four_way_cells_fintech_higher']} of {hm['four_way_cells_min25_per_side']}** cells.",
-        f"- **DTI x CLTV Risk Matrix**: Of {hm['dti_cltv_cells_total']} cells, **{hm['dti_cltv_cells_sufficient_coverage']}** "
-        f"meet the sufficient-coverage threshold (>=100 loans/side, >=3 Fintech lenders, >=10 Bank lenders). "
-        f"Fintech pricing is meaningfully higher (>= +5 bps) in **{hm['dti_cltv_cells_fintech_higher_5bps']} of "
-        f"{hm['dti_cltv_cells_sufficient_coverage']}** covered cells.",
-        f"- **Persistence Across Lenders**: **{hm['fintech_lenders_above_bank_median']}** NYU Fintech lenders have a "
-        f"median rate spread above the Bank comparator median; equal-weighted lender-median gap is "
-        f"**+{hm['equal_weighted_lender_median_gap_bps']:.1f} bps**.",
-        f"- **Supporting Measures**: Fintech median interest rate is **{nat['fintech_median_interest_rate']:.3f}%** vs. "
-        f"**{nat['bank_median_interest_rate']:.3f}%** at banks (**+{nat['interest_rate_gap_bps']:.1f} bps**), and "
-        f"Fintech median origination charges are **{nat['fintech_median_orig_pct']:.3f}%** of loan amount vs. "
-        f"**{nat['bank_median_orig_pct']:.3f}%** at banks (**+{nat['orig_pct_gap_bps']:.1f} bps**).",
+        f"- **DTI x CLTV Risk Matrix**: Fintech pricing is >= +5 bps higher in **{hm['standard_dti_cltv_cells_fintech_higher_5bps']}** "
+        f"standard (DTI <50%) cells. Including the thin DTI >=50% row, {hm['dti_cltv_cells_sufficient_coverage']} of "
+        f"{hm['dti_cltv_cells_total']} cells meet coverage (>=100 loans/side, >=3 Fintech lenders, >=10 Bank lenders).",
+        f"- **Persistence Across Lenders (baseline)**: **{hm['fintech_lenders_above_bank_median']}** NYU Fintech lenders have a "
+        f"median rate spread above the Bank median; **{hm['fintech_lenders_above_bank_5bps']}** are at least 5 bps above. "
+        f"Equal-weighted lender-median gap is **{b1(hm['equal_weighted_lender_median_gap_bps'])} bps**.",
+        f"- **Supporting Measures (baseline)**: Fintech median interest rate is **{p3(base['fintech_median_interest_rate'])}** vs. "
+        f"**{p3(base['bank_median_interest_rate'])}** at banks (**{b1(base['interest_rate_gap_bps'])} bps**), and "
+        f"Fintech median origination charges are **{p3(base['fintech_median_orig_pct'])}** of loan amount vs. "
+        f"**{p3(base['bank_median_orig_pct'])}** at banks (**{b1(base['orig_pct_gap_bps'])} bps**).",
         '',
         '## 2. Robustness Checks',
         '',
-        '| Specification | Fintech Loans | Bank Loans | Fintech Med Spread | Bank Med Spread | Spread Gap (bps) | Rate Gap (bps) | Orig Fee Gap (bps) |',
+        '| Specification | Fintech Loans | Comparator Loans | Fintech Med Spread | Comparator Med Spread | Spread Gap (bps) | Rate Gap (bps) | Orig Fee Gap (bps) |',
         '|---|---:|---:|---:|---:|---:|---:|---:|',
     ]
     for r in summary['robustness_checks']:
         lines.append(
             f"| {r['slice']} | {r['fintech_loans_rs']:,} | {r['bank_loans_rs']:,} | "
-            f"{r['fintech_median_rate_spread']:.3f}% | {r['bank_median_rate_spread']:.3f}% | "
-            f"**{r['rate_spread_gap_bps']:+.1f}** | {r['interest_rate_gap_bps']:+.1f} | {r['orig_pct_gap_bps']:+.1f} |"
+            f"{p3(r['fintech_median_rate_spread'])} | {p3(r['bank_median_rate_spread'])} | "
+            f"**{b1(r['rate_spread_gap_bps'])}** | {b1(r['interest_rate_gap_bps'])} | {b1(r['orig_pct_gap_bps'])} |"
         )
     lines += [
         '',
@@ -575,9 +673,9 @@ def write_markdown_report(path, summary, state_rows):
     for r in summary['single_dimension']:
         lines.append(
             f"| `{r['dimension']}` | {r['group']} | {r['fintech_loans_rs']:,} | {r['bank_loans_rs']:,} | "
-            f"{r['fintech_median_rate_spread']:.3f}% | {r['bank_median_rate_spread']:.3f}% | "
-            f"**{r['rate_spread_gap_bps']:+.1f}** | {r['interest_rate_gap_bps']:+.1f} | "
-            f"{r['orig_pct_gap_bps']:+.1f} | {r['status']} |"
+            f"{p3(r['fintech_median_rate_spread'])} | {p3(r['bank_median_rate_spread'])} | "
+            f"**{b1(r['rate_spread_gap_bps'])}** | {b1(r['interest_rate_gap_bps'])} | "
+            f"{b1(r['orig_pct_gap_bps'])} | {r['status']} |"
         )
     lines += [
         '',
@@ -587,12 +685,12 @@ def write_markdown_report(path, summary, state_rows):
         '|---|---|---:|---:|---:|---:|---:|---:|---:|---|',
     ]
     for r in summary['dti_cltv_grid']:
-        ex_rk = f"{r['ex_rocket_gap_bps']:+.1f}" if r['ex_rocket_gap_bps'] is not None else 'NA'
+        ex_rk = f"{b1(r['ex_rocket_gap_bps'])}" if r['ex_rocket_gap_bps'] is not None else 'NA'
         lines.append(
             f"| {r['dti_group']} | {r['cltv_group']} | {r['fintech_loans_rs']:,} | {r['bank_loans_rs']:,} | "
-            f"{r['fintech_median_rate_spread']:.3f}% | {r['bank_median_rate_spread']:.3f}% | "
-            f"**{r['rate_spread_gap_bps']:+.1f}** | {ex_rk} | "
-            f"{r['orig_pct_gap_bps']:+.1f} | {r['status']} |"
+            f"{p3(r['fintech_median_rate_spread'])} | {p3(r['bank_median_rate_spread'])} | "
+            f"**{b1(r['rate_spread_gap_bps'])}** | {ex_rk} | "
+            f"{b1(r['orig_pct_gap_bps'])} | {r['status']} |"
         )
     lines += [
         '',
@@ -604,8 +702,8 @@ def write_markdown_report(path, summary, state_rows):
     for r in summary['fintech_lenders']:
         lines.append(
             f"| {r['lender_name']} | {r['total_loans']:,} | {r['share_of_fintech_loans_pct']:.1f}% | "
-            f"{r['median_rate_spread']:.3f}% | **{r['gap_vs_bank_median_bps']:+.1f}** | "
-            f"{r['median_interest_rate']:.3f}% | {r['median_orig_pct']:.3f}% |"
+            f"{p3(r['median_rate_spread'])} | **{b1(r['gap_vs_bank_median_bps'])}** | "
+            f"{p3(r['median_interest_rate'])} | {p3(r['median_orig_pct'])} |"
         )
     lines += [
         '',
@@ -617,8 +715,8 @@ def write_markdown_report(path, summary, state_rows):
     for r in state_rows[:15]:
         lines.append(
             f"| {r['state_code']} | {r['fintech_loans_rs']:,} | {r['bank_loans_rs']:,} | "
-            f"{r['fintech_median_rate_spread']:.3f}% | {r['bank_median_rate_spread']:.3f}% | "
-            f"**{r['rate_spread_gap_bps']:+.1f}** | {r['orig_pct_gap_bps']:+.1f} | {r['status']} |"
+            f"{p3(r['fintech_median_rate_spread'])} | {p3(r['bank_median_rate_spread'])} | "
+            f"**{b1(r['rate_spread_gap_bps'])}** | {b1(r['orig_pct_gap_bps'])} | {r['status']} |"
         )
     path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
 
@@ -639,9 +737,11 @@ def main(argv=None):
     print(f'Analyzing {clean_csv.name} ...')
     summary = analyze(clean_csv, out_dir)
     hm = summary['headline_metrics']
-    nat = hm['national_unadjusted']
-    print(f"Done. National rate-spread gap: {nat['rate_spread_gap_bps']:+.2f} bps "
-          f"(Fintech {nat['fintech_median_rate_spread']:.3f}% vs Bank {nat['bank_median_rate_spread']:.3f}%).")
+    base = hm['national_controlled_sample']
+    nb = hm['national_vs_nonbank']
+    print(f"Done. Baseline rate-spread gap: {base['rate_spread_gap_bps']:+.2f} bps "
+          f"(Fintech {base['fintech_median_rate_spread']:.3f}% vs Bank {base['bank_median_rate_spread']:.3f}%); "
+          f"vs non-fintech nonbanks: {nb['rate_spread_gap_bps']:+.2f} bps.")
     print(f'Reports saved in {out_dir}')
 
 

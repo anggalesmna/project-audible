@@ -22,6 +22,8 @@ from analyze_pricing import (
     INCOME_ORDER,
     LOAN_ORDER,
     Bucket,
+    comparison_role,
+    in_baseline,
     median,
     quantile,
     r2,
@@ -101,10 +103,23 @@ def compute_slices(clean_csv: Path):
     rob_site_built = Bucket()
     rob_no_flags = Bucket()
     rob_unadjusted = Bucket()
+    rob_vs_nonbank = Bucket()
+    base_rs_f = defaultdict(list)
+    base_rs_b = defaultdict(list)
 
     with clean_csv.open(newline='', encoding='utf-8') as f:
         for r in csv.DictReader(f):
-            if r['in_main_comparison'] != '1':
+            role = comparison_role(r)
+            if role is None:
+                continue
+            if role in ('fintech', 'nonbank') and in_baseline(r):
+                rob_vs_nonbank.add(
+                    role == 'fintech', r['lei'],
+                    float(r['rate_spread_num']) if r['elig_rate_spread'] == '1' else None,
+                    float(r['interest_rate_num']) if r['elig_interest_rate'] == '1' else None,
+                    float(r['orig_charge_pct']) if r['elig_orig_pct'] == '1' else None,
+                )
+            if role == 'nonbank':
                 continue
             is_f = r['lender_type'] == 'Fintech'
             lei = r['lei']
@@ -122,6 +137,8 @@ def compute_slices(clean_csv: Path):
                 continue
 
             rob_base.add(is_f, lei, rs, ir, oc)
+            if rs is not None:
+                (base_rs_f if is_f else base_rs_b)[lei].append(rs)
             if r['construction_method'].strip() == '1' and r['total_units'].strip() == '1':
                 rob_site_built.add(is_f, lei, rs, ir, oc)
             if not r['review_flags']:
@@ -196,8 +213,18 @@ def compute_slices(clean_csv: Path):
         })
     fintech_lenders.sort(key=lambda r: -r['total_loans'])
 
+    f_meds = [median(v) for v in base_rs_f.values() if len(v) >= 10]
+    b_meds = [median(v) for v in base_rs_b.values() if len(v) >= 10]
+    lender_stats = {
+        'above_bank': sum(1 for r in fintech_lenders if (r['gap_vs_bank_median_bps'] or 0) > 0),
+        'above_5bps': sum(1 for r in fintech_lenders if (r['gap_vs_bank_median_bps'] or 0) >= 5),
+        'total': len(fintech_lenders),
+        'equal_weighted_gap_bps': r2(100.0 * (median(f_meds) - median(b_meds))) if f_meds and b_meds else None,
+    }
+
     robustness_checks = [
         base_sum,
+        rob_vs_nonbank.summarize({'slice': 'Alternative comparator: Fintech vs non-fintech nonbanks (TYPE 40/41)'}),
         rob_ctrl_all_dti.summarize({'slice': 'Controlled sample (all 4 borrower vars valid, incl. DTI >=50%)'}),
         rob_site_built.summarize({'slice': 'Site-built 1-unit properties only (excl. manufactured & multi-unit)'}),
         rob_no_flags.summarize({'slice': 'Excluding all review-flagged loans'}),
@@ -210,6 +237,7 @@ def compute_slices(clean_csv: Path):
         'bars': out_bars,
         'fintech_lenders': fintech_lenders,
         'robustness_checks': robustness_checks,
+        'lender_stats': lender_stats,
     }
 
 
@@ -987,7 +1015,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <div>
                   <h2 class="panel-title">14 Controlled Fintech Lenders vs. Bank Benchmark (0.049% Spread)</h2>
                   <p class="panel-subtitle">
-                    <strong>12 of 14</strong> Fintech lenders in the controlled sample have a median rate spread above the bank median; equal-weighted lender-median gap is <strong>+16.6 bps</strong>.
+                    <span id="lender-summary"></span>
                   </p>
                 </div>
               </div>
@@ -999,7 +1027,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <div>
                   <h2 class="panel-title">Robustness Checks &amp; Key Caveat</h2>
                   <p class="panel-subtitle">
-                    Fintech pricing remains <strong>+16.2 to +17.2 bps higher</strong> across sample definitions.
+                    <span id="robust-summary"></span>
                   </p>
                 </div>
               </div>
@@ -1011,7 +1039,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     <tr>
                       <th scope="col" style="text-align:start;">Specification</th>
                       <th scope="col">Fintech N</th>
-                      <th scope="col">Bank N</th>
+                      <th scope="col">Comparator N</th>
                       <th scope="col">Spread Gap</th>
                       <th scope="col">Fee Gap</th>
                     </tr>
@@ -1437,6 +1465,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }));
       buildBarRows(document.getElementById("lender-bar-container"), lenderItems, -30, 50, null);
 
+      const ls = DATA.lender_stats;
+      document.getElementById("lender-summary").innerHTML =
+        `<strong>${ls.above_bank} of ${ls.total}</strong> Fintech lenders in the controlled sample have a median rate spread above the bank median ` +
+        `(<strong>${ls.above_5bps} of ${ls.total}</strong> by 5 bps or more); equal-weighted lender-median gap is <strong>${fmtBps(ls.equal_weighted_gap_bps)}</strong>.`;
+      const gaps = DATA.robustness_checks.map((r) => r.rate_spread_gap_bps).filter((v) => v !== null);
+      const base = DATA.headline_metrics.national_controlled_sample || {};
+      const ci = base.lender_cluster_ci95_bps || DATA.headline_metrics.baseline_lender_cluster_ci95_bps;
+      document.getElementById("robust-summary").innerHTML =
+        `Gap ranges from <strong>${fmtBps(Math.min(...gaps))} to ${fmtBps(Math.max(...gaps))}</strong> across specifications` +
+        (ci && ci[0] !== null ? `; baseline lender-clustered 95% CI <strong>${fmtBps(ci[0])} to ${fmtBps(ci[1])}</strong>.` : '.');
+
       const robTbody = document.getElementById("robustness-tbody");
       robTbody.innerHTML = "";
       DATA.robustness_checks.forEach((r) => {
@@ -1513,6 +1552,7 @@ def main():
         'headline_metrics': summary['headline_metrics'],
         'robustness_checks': slices_data['robustness_checks'],
         'fintech_lenders': slices_data['fintech_lenders'],
+        'lender_stats': slices_data['lender_stats'],
         'slices_data': {
             'states': slices_data['states'],
             'slices': slices_data['slices'],

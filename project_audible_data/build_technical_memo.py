@@ -133,7 +133,7 @@ def build_document_xml() -> str:
         r_xml('Audience: ', bold=True, size_half_pt=18, color='B45309'),
         r_xml('American Fintech Council (AFC)   |   ', size_half_pt=18, color='334155'),
         r_xml('Date: ', bold=True, size_half_pt=18, color='B45309'),
-        r_xml('October 22, 2026', size_half_pt=18, color='334155'),
+        r_xml('October 26, 2026', size_half_pt=18, color='334155'),
     ], before=0, after=40, line=205, bottom_border=True))
 
     # 1. Data Sources and Provenance (8 pts)
@@ -154,7 +154,7 @@ def build_document_xml() -> str:
             [
                 'Philadelphia Fed HMDA Lender File (2018–2025)',
                 'Version Jul 15, 2026; accessed Oct 22, 2026',
-                'Pulled from philadelphiafed.org (hmda-2018-present.xlsx, SHA-256: a7e72d98...). Links 2025 HMDA lei to Federal Reserve rssd_id and depository institution codes (TYPE 10, 14, 20).'
+                'Fetched by classify_lenders_nyu.py from philadelphiafed.org (hmda-2018-present.xlsx, saved as raw/hmda_lender_2018_2025_philadelphia_fed.xlsx; SHA-256: a7e72d98...). Links 2025 HMDA lei to Federal Reserve rssd_id and institution TYPE (banks 10/14/20; nonbanks 40/41).'
             ],
         ],
         col_widths=[2450, 2200, 5850],
@@ -168,7 +168,7 @@ def build_document_xml() -> str:
     ))
     parts.append(bullet_p(
         'Step 2 — Lender Classification Join (classify_lenders_nyu.py -> mortgages_2025_classified.csv): ',
-        'Joins lei to the Philadelphia Fed file (lei -> rssd_id, TYPE) and matches rssd_id to the NYU list. Classifies Fintech (175,928 loans; 15 lenders) vs. Bank comparator (non-NYU depository banks TYPE 10/14/20: 347,634 loans; 662 lenders). Credit unions (TYPE 30) and other nonbanks remain separate.'
+        'Joins lei to the Philadelphia Fed file (lei -> rssd_id, TYPE) and matches rssd_id to the NYU list. Classifies Fintech (175,928 loans; 15 lenders) vs. Bank comparator (non-NYU depository banks TYPE 10/14/20: 347,634 loans; 662 lenders). Credit unions (TYPE 30) and other lenders stay out of the main comparison; non-fintech independent mortgage banks (TYPE 40/41) are used only as an alternative comparator.'
     ))
     parts.append(bullet_p(
         'Step 3 — Lossless Cleaning & Binning (clean_mortgages.py -> mortgages_2025_clean.csv): ',
@@ -176,14 +176,14 @@ def build_document_xml() -> str:
     ))
     parts.append(bullet_p(
         'Step 4 & 5 — Aggregation & Dashboard (analyze_pricing.py & build_dashboard.py -> Submit/Project Audible Dashboard.html): ',
-        'Evaluates the controlled baseline (in_main_comparison=1, all 4 borrower vars valid, conforming DTI <50%: 511,199 loans — 173,033 Fintech across 14 lenders vs. 338,166 Bank across 655 lenders) across three measures: (1) Main: Rate-Spread Gap = 100 * (Median Spread_Fintech - Median Spread_Bank), where Rate Spread = APR - APOR (+16.4 bps: 0.213% vs. 0.049%); (2) Upfront Fee Ratio = 100 * (origination_charges / loan_amount) (+37.2 bps: 0.947% vs. 0.575%); (3) Contract Interest Rate (+12.5 bps: 6.625% vs. 6.500%).'
+        'Evaluates the controlled baseline (in_main_comparison=1, all 4 borrower vars valid, conforming DTI <50%: 511,199 loans — 173,033 Fintech across 14 lenders vs. 338,166 Bank across 655 lenders) across three measures: (1) Main: Rate-Spread Gap = 100 * (Median Spread_Fintech - Median Spread_Bank), where Rate Spread = APR - APOR (+16.4 bps: 0.213% vs. 0.049%); (2) Upfront Fee Ratio = 100 * (origination_charges / loan_amount) (+37.2 bps: 0.947% vs. 0.575%); (3) Contract Interest Rate (+12.5 bps: 6.625% vs. 6.500%). Robustness: lender-clustered bootstrap CI, Fintech vs. non-fintech nonbanks, ex-Rocket and ex-21st Mortgage, site-built only, no review flags, unadjusted sample.'
     ))
 
     # 3. Reproducibility & Parameters (5 pts)
     parts.append(section_heading('3. Reproducibility, Parameters, and Assumptions'))
     parts.append(bullet_p(
         'Execution & Automated Tests (project_audible_data/README.md): ',
-        'Run in order from project_audible_data/: python3 download_hmda.py -> python3 classify_lenders_nyu.py -> python3 clean_mortgages.py -> python3 analyze_pricing.py -> python3 build_dashboard.py. Verify with python3 -m unittest -v. Environment: Python 3.10+ (standard library for steps 1, 3, 4, 5; pandas and openpyxl for step 2 Excel lookups).'
+        'Run in order from project_audible_data/: python3 download_hmda.py -> python3 classify_lenders_nyu.py -> python3 clean_mortgages.py -> python3 analyze_pricing.py -> python3 build_dashboard.py -> python3 build_position_memo.py. Verify with python3 -m unittest -v. Environment: Python 3.10+ (standard library for steps 1, 3, 4, 5; pandas and openpyxl for step 2). Large raw files are gitignored and re-downloaded by steps 1–2.'
     ))
     parts.append(bullet_p(
         'Parameters & Assumptions: ',
@@ -202,7 +202,7 @@ def build_document_xml() -> str:
     ))
     parts.append(bullet_p(
         'Tried & Rejected #2 — Raw Dollar Origination Fees & Broad Nonbank Comparator: ',
-        'Raw dollar origination_charges were rejected because they confound fees with loan size ($3,000 is 1.50% on a $200k loan vs. 0.50% on a $600k loan); dividing by loan_amount normalizes upfront cost. Pooling non-NYU mortgage companies into the comparator was also rejected because many unlabelled nonbanks use digital origination; restricting the comparator to depository banks (TYPE 10/14/20) ensures a clean institutional benchmark.'
+        'Raw dollar origination_charges were rejected because they confound fees with loan size ($3,000 is 1.50% on a $200k loan vs. 0.50% on a $600k loan); dividing by loan_amount normalizes upfront cost. Pooling non-NYU mortgage companies into the comparator was also rejected because many unlabelled nonbanks use digital origination; restricting the comparator to depository banks (TYPE 10/14/20) ensures a clean institutional benchmark. Because all 14 Fintech lenders are nonbanks, non-fintech nonbanks (TYPE 40/41) are reported separately as a robustness comparator to separate a fintech effect from a nonbank effect.'
     ))
 
     sect_pr = (
