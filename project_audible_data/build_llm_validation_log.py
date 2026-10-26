@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Word LLM Validation Log in Submit/Project Audible LLM Validation Log.docx."""
+"""Generate the concise 1-page Word LLM Validation Log in Submit/Project Audible LLM Validation Log.docx."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -26,7 +26,7 @@ def r_xml(text: str, bold: bool = False, italic: bool = False, size_half_pt: int
     )
 
 
-def p_xml(runs: list[str], before: int = 20, after: int = 20, line: int = 210,
+def p_xml(runs: list[str], before: int = 24, after: int = 24, line: int = 220,
           bottom_border: bool = False, left_indent: int = 0, hanging: int = 0) -> str:
     bdr = (
         '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="2" w:color="CBD5E1"/></w:pBdr>'
@@ -47,7 +47,7 @@ def p_xml(runs: list[str], before: int = 20, after: int = 20, line: int = 210,
 def section_heading(title: str) -> str:
     return p_xml(
         [r_xml(title, bold=True, size_half_pt=20, color='0F172A')],
-        before=75, after=28, line=215, bottom_border=True
+        before=90, after=36, line=220, bottom_border=True
     )
 
 
@@ -58,7 +58,7 @@ def bullet_p(lead: str, body: str, size_half_pt: int = 18) -> str:
             r_xml(lead, bold=True, size_half_pt=size_half_pt, color='0F172A'),
             r_xml(body, bold=False, size_half_pt=size_half_pt, color='1E293B'),
         ],
-        before=14, after=18, line=206, left_indent=180, hanging=180
+        before=20, after=24, line=216, left_indent=180, hanging=180
     )
 
 
@@ -71,7 +71,7 @@ def table_xml(headers: list[str], rows: list[list[str]], col_widths: list[int]) 
         run = r_xml(
             text,
             bold=(is_header or bold_first),
-            size_half_pt=16,
+            size_half_pt=17,
             color='0F172A' if (is_header or bold_first) else '1E293B',
         )
         return (
@@ -80,11 +80,11 @@ def table_xml(headers: list[str], rows: list[list[str]], col_widths: list[int]) 
             f'<w:tcW w:w="{width}" w:type="dxa"/>'
             f'{shd}'
             f'<w:tcMar>'
-            f'<w:top w:w="26" w:type="dxa"/><w:bottom w:w="26" w:type="dxa"/>'
-            f'<w:left w:w="60" w:type="dxa"/><w:right w:w="60" w:type="dxa"/>'
+            f'<w:top w:w="36" w:type="dxa"/><w:bottom w:w="36" w:type="dxa"/>'
+            f'<w:left w:w="70" w:type="dxa"/><w:right w:w="70" w:type="dxa"/>'
             f'</w:tcMar>'
             f'</w:tcPr>'
-            f'{p_xml([run], before=6, after=6, line=192)}'
+            f'{p_xml([run], before=10, after=10, line=200)}'
             f'</w:tc>'
         )
 
@@ -125,112 +125,99 @@ def build_document_xml() -> str:
     # Title Block
     parts.append(p_xml([
         r_xml('FINTECH 590 — PROJECT AUDIBLE: LLM VALIDATION LOG', bold=True, size_half_pt=22, color='0F172A'),
-    ], before=0, after=12, line=215))
+    ], before=0, after=14, line=220))
     parts.append(p_xml([
-        r_xml('Author & Human Owner: ', bold=True, size_half_pt=18, color='B45309'),
-        r_xml('Angga Lesmana (reviewer: Violla Tania)   |   ', size_half_pt=18, color='334155'),
+        r_xml('Human Owners: ', bold=True, size_half_pt=18, color='B45309'),
+        r_xml('Angga Lesmana & Violla Tania   |   ', size_half_pt=18, color='334155'),
         r_xml('Topic: ', bold=True, size_half_pt=18, color='B45309'),
         r_xml('Fintech vs. Bank Mortgage Pricing (AFC)   |   ', size_half_pt=18, color='334155'),
         r_xml('Date: ', bold=True, size_half_pt=18, color='B45309'),
         r_xml('October 22–26, 2026', size_half_pt=18, color='334155'),
-    ], before=0, after=36, line=205, bottom_border=True))
+    ], before=0, after=40, line=210, bottom_border=True))
 
-    # 1. Complete Inventory & Prompts/Outputs Recorded (Rubric Criteria 1 & 2: 11 pts)
-    parts.append(section_heading('1. Complete LLM Inventory, Prompts, and Recorded Outputs'))
+    # 1. Complete Inventory & Prompts/Outputs Recorded
+    parts.append(section_heading('1. LLM Inventory, Prompts, and Recorded Outputs'))
     parts.append(table_xml(
-        headers=['Stage & Date', 'Tool & Model / Version', 'Key Prompts (Summary / Verbatim)', 'Outputs Used & Linked Artifacts'],
+        headers=['Stage & Date', 'Tool & Model', 'Key Human Prompts (Translated / Verbatim)', 'Outputs Used & Artifacts'],
         rows=[
             [
-                '1. Pitch Revision (Oct 22, 2026, 13:00–14:15)',
-                'OpenAI Codex Agent (codex-primary-runtime v26.1017.22136)',
-                '"On my initial pitch file, my professor gave me a note: Who is the audience, and what is the decision?" -> "How about if the audience is the FinTech Association?... AFC or FTA? give me a more straightforward proposed decision"',
-                'Project Audible Initial Pitch AFC.docx (reframed around American Fintech Council leadership deciding whether to launch a member mortgage-pricing review).'
+                '1. Pitch Framing\n(Oct 22, 2026)',
+                'OpenAI Codex\n(v26.1017)',
+                '"My professor asked: Who is the audience, and what is the decision?" -> "What if the audience is the American Fintech Council (AFC)? Give me a straightforward operational decision."',
+                'Project Audible Initial Pitch AFC.docx (framed around AFC leadership deciding on a member pricing review).'
             ],
             [
-                '2. HMDA Extraction (Oct 22, 2026, 17:30–18:15)',
-                'OpenAI Codex Agent (v26.1017.22136)',
-                '"For the dataset, is it enough to use one data point?" -> "Create a python code to automatically download the data that I need" -> "Jelasin per function di python code kita... ada data yang missing ga?"',
-                'download_hmda.py, test_download_hmda.py, mortgages_2025.csv (1,508,076 loans), lender_inventory_2025.csv (2,378 lenders), manifest.json, sample_summary.json.'
+                '2. HMDA Extraction\n(Oct 22, 2026)',
+                'OpenAI Codex\n(v26.1017)',
+                '"Write Python code to download and filter the 2025 HMDA data." -> "Explain each function and check which pricing fields are missing."',
+                'download_hmda.py, test_download_hmda.py, mortgages_2025.csv (1,508,076 loans), manifest.json.'
             ],
             [
-                '3. Lender Classification (Oct 22, 2026, 18:15–19:50)',
-                'OpenAI Codex Agent (v26.1017.22136)',
-                '"Bantu saya cari kriteria fintech, seinget saya NYU pernah ada publikasi... bantu saya periksa data NYU dan 51 lainnya dari riset si Buchak... kasih hasilnya kesini, nanti saya yang memutuskan" -> "Ok gas langsung pakai yang NYU"',
-                'classify_lenders_nyu.py, test_classify_lenders_nyu.py, lender_classification_2025.csv, mortgages_2025_classified.csv (15 NYU Fintechs vs. 662 Philadelphia Fed TYPE 10/14/20 banks).'
+                '3. Lender Matching\n(Oct 22, 2026)',
+                'OpenAI Codex\n(v26.1017)',
+                '"Compare published Fintech lender lists (NYU Stern vs. Buchak et al.) on our 2025 HMDA sample so I can decide." -> "Proceed with the NYU Stern list."',
+                'classify_lenders_nyu.py, mortgages_2025_classified.csv (15 NYU Fintechs vs. 662 TYPE 10/14/20 banks).'
             ],
             [
-                '4. Data Cleansing (Oct 22, 2026, 19:54–20:30)',
-                'Google Antigravity (Claude Opus 4.5 & Gemini 3.1 Pro)',
-                '"Cek folder project audible ini, terus baca chat history saya dengan AI agent sebelumnya" -> "Kenapa kita pakai origination_charges / loan?" -> "Buat salinan data untuk cleansing... langkah2 selanjutnya?"',
-                'clean_mortgages.py, test_clean_mortgages.py, mortgages_2025_clean.csv, and data_quality/ audit tables (missingness_by_group.csv, indicator_eligibility.csv).'
+                '4. Data Cleansing\n(Oct 22, 2026)',
+                'Google Antigravity\n(Claude Opus 4.5 & Gemini 3.1 Pro)',
+                '"Review the project folder and prior session history." -> "Why normalize origination_charges by loan_amount?" -> "Create a lossless cleaned copy and audit tables."',
+                'clean_mortgages.py, test_clean_mortgages.py, mortgages_2025_clean.csv, data_quality/ reports.'
             ],
             [
-                '5. Pricing Analysis & Dashboard (Oct 22, 2026, 20:30–22:25)',
-                'Google Antigravity (Gemini 3.1 Pro)',
-                '"Buat 3 tab... key point buat straightforward... yang DTI > 50% ini aga misleading ga si? diskusi dulu... ini narasinya tetep pake yang 17.2 bps? bukannya kalau di takeout cuma jadi 16.4 bps?" -> "Opsi A aja yang pake Definisi #4"',
-                'analyze_pricing.py, build_dashboard.py, build_technical_memo.py, Submit/Project Audible Dashboard.html, and Submit/Project Audible Technical Memo.docx.'
+                '5. Analysis & UI\n(Oct 22, 2026)',
+                'Google Antigravity\n(Gemini 3.1 Pro)',
+                '"Make a clean 3-tab dashboard with straightforward takeaways." -> "Isn\'t DTI >=50% misleading since banks lack CLTV >80% there?" -> "Once DTI >=50% is excluded, use the +16.4 bps 4-variable baseline."',
+                'analyze_pricing.py, build_dashboard.py, build_technical_memo.py, Dashboard.html, Technical Memo.docx.'
             ],
             [
-                '6. Teammate Review (Oct 25, 2026; Violla Tania)',
-                'Claude (claude.ai), Claude Opus 5.5',
-                'Review the repo against the rubric; explain the fintech classification; act as challenger and complete missing deliverables.',
-                'Position memo and build_position_memo.py; nonbank robustness check; README and reproducibility fixes; updated tests.'
+                '6. Peer Review\n(Oct 25, 2026)',
+                'Claude (claude.ai)\nClaude Opus 5.5',
+                '"Review the repository against the rubric, challenge the Fintech vs. nonbank classification, and draft the position memo."',
+                'build_position_memo.py, Position Memo.docx, nonbank TYPE 40/41 robustness check, updated tests.'
             ],
         ],
-        col_widths=[1650, 1850, 3850, 3150],
+        col_widths=[1550, 1750, 3950, 3250],
     ))
 
-    # 2. Validation Shown: Errors Found, Challenged, and Corrected (Rubric Criterion 3: 6 pts)
-    parts.append(section_heading('2. Validation Shown: How LLM Outputs Were Checked and Errors Corrected'))
+    # 2. Validation Shown: Errors Found, Challenged, and Corrected
+    parts.append(section_heading('2. Validation Shown: LLM Errors Challenged and Corrected'))
     parts.append(bullet_p(
-        '1. Rejected Invalid Audiences & Weak "Now What" in Initial Pitch (Session 1): ',
-        'The LLM initially proposed a North Carolina housing counseling organization and later a consumer-finance editor. I challenged both: (a) checking HUD Housing Counseling Handbook 7610.1 confirmed counselors are prohibited from steering buyers to specific lender types, and (b) a consumer-finance editor lacked an operational decision ("Now What") for the 30-second rubric test. I proposed a U.S. Fintech association (analogous to Indonesia\'s AFTECH) and selected the American Fintech Council (AFC) deciding on a member pricing review. I also caught the contradiction between the title ("Are Fintech Mortgages Cheaper?") and our hypothesis, directing an explicit hypothesis that Fintechs price higher.'
+        '1. Rejected Invalid Audiences (Session 1): ',
+        'Rejected the LLM\'s housing-counselor and finance-editor pitches after checking HUD Handbook 7610.1 (counselors cannot steer borrowers to specific lender types) and the rubric\'s "Now What" requirement. Selected AFC leadership deciding on a Q1 2027 member pricing review.'
     ))
     parts.append(bullet_p(
-        '2. Fixed FFIEC HTTP Rejection, Folder Path Mismatch & Verified Fixed-Rate Rules (Session 1): ',
-        'During live execution of download_hmda.py, FFIEC rejected default urllib headers and the raw 2025 LAR CSV schema differed from draft expectations; this was fixed with custom academic headers, ETag resume checks, and exact field mapping. When I noticed the files were downloaded into an old folder (590 Assignment/), I moved them to Project Audible/ and required a full SHA-256 hash verification against manifest.json (confirming 1,508,076 loans and zero byte corruption). I also verified against CFPB Reg C §1003.4(a)(26) why intro_rate_period = NA is required to isolate 30-year fixed-rate loans.'
+        '2. Audited Fintech Lists & Resolved ID Mismatch (Session 1): ',
+        'Manually supplied the NYU Stern Excel list and directed a cross-audit against Buchak et al., exposing duplicate rows and bank/credit-union contamination in Buchak\'s list. Bridged the 2017 RSSD ID to 2025 LEI gap using the Philadelphia Fed Lender File.'
     ))
     parts.append(bullet_p(
-        '3. Audited NYU (Fuster et al.) vs. Buchak et al. Lists & Resolved RSSD-to-LEI ID Mismatch (Session 1): ',
-        'Rather than letting the LLM guess Fintech labels, I manually downloaded the NYU Stern Excel file (fintech_classification.xlsx) and instructed the agent to cross-audit it against Buchak et al. (2018/2019). The audit revealed that NYU uses Federal Reserve RSSD IDs while 2025 HMDA uses LEIs, that Buchak\'s "51 fintechs" contained duplicate rows (CashCall listed twice) and banks/credit unions, and that the two lists conflicted on 6 lenders (e.g., Everett, Envoy, Evergreen). We solved the ID gap via the Philadelphia Fed HMDA Lender File (LEI -> RSSD ID) and I locked in the NYU list (15 matched Fintechs) vs. 662 regulated depository banks (TYPE 10, 14, 20).'
+        '3. Replaced Naive Missing-Value Handling (Session 2): ',
+        'Rejected early exploratory code that treated "NA", "Exempt", and blanks as identical NaNs. Built a standard-library pipeline (clean_mortgages.py) that preserves all 1,508,076 rows, keeps valid $0 origination fees (28,851 loans), and parses both text DTI bands and exact integers.'
     ))
     parts.append(bullet_p(
-        '4. Corrected Naive Missing-Value Handling in Exploratory Code (Session 2): ',
-        'An early exploratory script (cekdata.py) used pandas na_values=["NA", "Exempt", ""], which conflated distinct HMDA regulatory codes into generic NaNs and failed when the local pandas environment lacked dateutil. We replaced it with a pure standard-library pipeline (clean_mortgages.py) verified by unit tests (test_clean_mortgages.py) that preserves all 1,508,076 raw rows, distinguishes valid 0.0 origination fees (5,048 Fintech and 23,803 Bank zero-fee loans) from NA/Exempt, and preserves HMDA text DTI ranges (<20%, 20%-<30%, 30%-<36%) alongside exact integers (36–49).'
+        '4. Caught DTI >=50% Distortion & Reconciled +16.4 bps Headline (Session 2): ',
+        'Questioned why DTI >=50% lacked bank comparisons at high CLTV; loan-level inspection showed 99.6% of conforming loans have DTI <50% and 69% of Fintech DTI >=50% loans came from one manufactured-housing lender (21st Mortgage) with missing CLTV. Excluded DTI >=50% and corrected the headline from +17.2 bps (unadjusted) to +16.4 bps (controlled baseline).'
     ))
     parts.append(bullet_p(
-        '5. Caught the DTI >=50% / 21st Mortgage Distortion & Reconciled the +17.2 vs. +16.4 bps Headline (Session 2): ',
-        'Reviewing the first dashboard draft, I noticed that DTI >=50% had missing/Low-N bank comparisons in CLTV >80% and asked whether DTI >=50% was misleading. Auditing the loan records confirmed that 99.6% of conforming loans have DTI <50% (the Fannie/Freddie automated underwriting cap), and 69% (499 of 719) of Fintech loans in DTI >=50% came from one manufactured-housing lender (21st Mortgage) with missing CLTV (CLTV=NA), creating an artificial +197.3 bps spike in the 1D DTI chart. After removing DTI >=50%, I caught that the LLM still displayed the unadjusted +17.2 bps headline instead of the controlled +16.4 bps figure. We reconciled the entire dashboard to Definition #4 (all 4 borrower variables valid + standard DTI <50%: 511,199 loans, +16.4 bps), making all KPIs, bar charts, and the 16 DTI x CLTV cells 100% additive.'
-    ))
-    parts.append(bullet_p(
-        '6. Rejected Cluttered Dashboard UI & Enforced Visual, Straightforward Design (Session 2): ',
-        'I rejected the LLM\'s initial single-page dashboard because it was overly dense, included an unnecessary Presentation Mode button, buried key takeaways in wordy boxes, showed redundant robustness rows (Ex-Rocket, Ex-Top-2, Common Subset), and used a plain text table for the Selected Segment drill-down. I directed a clean 3-tab layout with minimalist top tabs, a full-width balanced slicer bar, direct "higher" wording instead of "premium", and an IQR (p25–p75) + paired-bar visual comparison card.'
+        '5. Redesigned Dashboard & Added Nonbank Comparator (Sessions 2 & 3): ',
+        'Replaced a dense single-page draft with a clean 3-tab layout and visual IQR/bar comparisons. During peer review, rejected a false LLM claim that static HTML lacked data, fixed unverified README figures, and added a non-fintech nonbank (TYPE 40/41) comparator.'
     ))
 
+    # 3. Clear Human Ownership
+    parts.append(section_heading('3. Clear Human Ownership (Decisions and Verified Numbers)'))
     parts.append(bullet_p(
-        '7. Teammate Review Corrections (Session 3): ',
-        'Rejected a false LLM finding that the dashboard was inconsistent (it had read static HTML without running JavaScript); verified against the live dashboard. Replaced README headline figures that matched no pipeline output with verified values. New figures (nonbank check, baseline CI) come only from rerunning the pipeline, not from the LLM.'
-    ))
-
-    # 3. Clear Human Ownership (Rubric Criterion 4: 3 pts)
-    parts.append(section_heading('3. Clear Human Ownership (Decisions and Numbers Verified by Human)'))
-    parts.append(bullet_p(
-        'Strategic & Methodological Decisions Owned by Angga Lesmana: ',
-        '(1) Selected the American Fintech Council (AFC) audience and member pricing review decision; (2) Chose the NYU Stern (Fuster et al., 2019) Fintech classification over Buchak et al. after reviewing the overlap/conflict audit, and approved the 662 Philadelphia Fed depository bank comparator (TYPE 10/14/20); (3) Mandated lossless non-imputation of missing HMDA fields and verified the economic rationale of normalizing upfront fees via origination_charges / loan_amount; (4) Identified the DTI >=50% anomaly, decided to focus segmentation on the 4 standard conforming DTI bands (<50%), and chose the 4-variable valid controlled sample (+16.4 bps) over the unadjusted sample (+17.2 bps) for mathematical consistency.'
+        'Methodology & Design Owned by Humans: ',
+        'Angga Lesmana selected the AFC audience, NYU Stern classification, depository bank benchmark (TYPE 10/14/20), fee normalization (origination_charges / loan_amount), conforming DTI <50% scope, and 3-tab dashboard design. Violla Tania directed the peer review, non-fintech nonbank robustness check (TYPE 40/41), and Position Memo structure.'
     ))
     parts.append(bullet_p(
-        'Final Numbers & Visuals Verified by Human: ',
-        'Personally verified all headline and segment metrics reported in the dashboard and memos: 1,508,076 total conforming loans extracted; 511,199 controlled comparison loans (173,033 Fintech across 14 lenders vs. 338,166 Bank across 655 lenders); +16.4 bps median rate-spread gap (0.213% vs. 0.049%); +12.5 bps median interest-rate gap (6.625% vs. 6.500%); +37.2 bps median upfront origination-fee gap (0.947% vs. 0.575%); Fintech pricing higher in 16 of 16 standard DTI x CLTV segments (peaking at +27.9 to +31.6 bps in CLTV >95%) and 12 of 14 controlled Fintech lenders.'
-    ))
-    parts.append(bullet_p(
-        'Session 3 Ownership: ',
-        'Violla Tania directed the review and approved the changes; Angga Lesmana reruns the pipeline, verifies the new figures and signs off on the position memo.'
+        'Final Figures Verified Against Pipeline Outputs: ',
+        '1,508,076 conforming loans extracted; 511,199 controlled baseline loans (173,033 Fintech across 14 lenders vs. 338,166 Bank across 655 lenders); +16.4 bps median rate-spread gap (0.213% vs. 0.049%; lender-clustered 95% CI: +11.5 to +23.3 bps); +12.5 bps rate gap; +37.2 bps origination-fee gap; Fintech higher in 16 of 16 DTI x CLTV cells and 12 of 14 lenders; -1.2 bps spread gap vs. 600 non-fintech nonbanks (808,681 loans).'
     ))
 
     sect_pr = (
         '<w:sectPr>'
         '<w:pgSz w:w="12240" w:h="15840"/>'
-        '<w:pgMar w:top="680" w:right="792" w:bottom="680" w:left="792" '
+        '<w:pgMar w:top="720" w:right="864" w:bottom="720" w:left="864" '
         'w:header="432" w:footer="432" w:gutter="0"/>'
         '</w:sectPr>'
     )
