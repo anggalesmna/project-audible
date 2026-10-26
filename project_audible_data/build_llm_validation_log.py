@@ -171,10 +171,10 @@ def build_document_xml() -> str:
                 'analyze_pricing.py, build_dashboard.py, build_technical_memo.py, Submit/Project Audible Dashboard.html, and Submit/Project Audible Technical Memo.docx.'
             ],
             [
-                '6. Teammate Review & Completion (Oct 25, 2026, 15:32–21:45; run by teammate Violla Tania)',
-                'Claude (claude.ai), Claude Opus 5.5 (claude-opus-5-5)',
-                '"Cek github ini" -> "untuk poin 3 dashboard saya konsisten? bagian mana yang kamu maksud? ... daftar NYU yang dimaksud itu apa" -> "sebagai rekan se tim Angga dan juga challenger ... perbaiki dan lengkapi semua hal yang diperlukan untuk project ini"',
-                'Review findings; README fixes; Philadelphia Fed auto-download (classify_lenders_nyu.py); baseline-aligned analyze_pricing.py with Fintech vs. non-fintech nonbank check; build_position_memo.py and Submit/Project Audible Position Memo.docx; new tests (test_build_dashboard.py and additions).'
+                '6. Teammate Review (Oct 25, 2026; Violla Tania)',
+                'Claude (claude.ai), Claude Opus 5.5',
+                'Review the repo against the rubric; explain the fintech classification; act as challenger and complete missing deliverables.',
+                'Position memo and build_position_memo.py; nonbank robustness check; README and reproducibility fixes; updated tests.'
             ],
         ],
         col_widths=[1650, 1850, 3850, 3150],
@@ -208,8 +208,8 @@ def build_document_xml() -> str:
     ))
 
     parts.append(bullet_p(
-        '7. Teammate Challenge: Caught a False LLM Finding and a Fabricated README Headline (Session 3): ',
-        'Claude reported that the dashboard showed +17.2 bps and 522,753 loans next to the +16.4 bps headline. Violla checked the live dashboard and showed it was consistent; Claude confirmed it had read the static HTML without running JavaScript, where those values are placeholders replaced on load, and withdrew the finding. Claude also found that the README headline (0.750% vs. 0.586%, "14 of 16" segments) matched no pipeline output; it was replaced with the verified 0.213% vs. 0.049% and 16 of 16. Because the data hosts were blocked in Claude\'s workspace, every new number (nonbank comparator, baseline CI) is produced only by rerunning the pipeline locally; the position memo prints a red PENDING line until then, and no number was typed in by the LLM.'
+        '7. Teammate Review Corrections (Session 3): ',
+        'Rejected a false LLM finding that the dashboard was inconsistent (it had read static HTML without running JavaScript); verified against the live dashboard. Replaced README headline figures that matched no pipeline output with verified values. New figures (nonbank check, baseline CI) come only from rerunning the pipeline, not from the LLM.'
     ))
 
     # 3. Clear Human Ownership (Rubric Criterion 4: 3 pts)
@@ -224,7 +224,7 @@ def build_document_xml() -> str:
     ))
     parts.append(bullet_p(
         'Session 3 Ownership: ',
-        'Violla Tania directed the review, rejected the false dashboard finding, and approved the nonbank robustness check and the position-memo recommendation. Angga Lesmana reruns the pipeline, verifies the nonbank comparator and baseline CI against the dashboard, and signs off on the final position memo before submission.'
+        'Violla Tania directed the review and approved the changes; Angga Lesmana reruns the pipeline, verifies the new figures and signs off on the position memo.'
     ))
 
     sect_pr = (
