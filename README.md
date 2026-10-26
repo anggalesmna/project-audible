@@ -70,7 +70,7 @@ To run the pipeline locally from scratch:
 # Clone the repository
 git clone https://github.com/anggalesmna/project-audible.git
 cd "project-audible/project_audible_data"
-pip install pandas openpyxl python-docx   # pandas/openpyxl for step 2; python-docx for the memos
+pip install pandas openpyxl   # needed for step 2 only; everything else is standard library
 
 # (Optional) Run tests
 python3 -m unittest -v

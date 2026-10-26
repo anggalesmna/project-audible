@@ -10,7 +10,7 @@ Open a terminal in `project_audible_data/` and run the pipeline in sequence:
 # Step 1: Download official 2025 FFIEC HMDA static snapshot & filter to product sample (1,508,076 loans)
 python3 download_hmda.py
 
-# Step 2: Join Philadelphia Fed Lender File & NYU Stern (Fuster et al., 2019) Fintech classification
+# Step 2 (downloads the Philadelphia Fed file if missing): Join Philadelphia Fed Lender File & NYU Stern (Fuster et al., 2019) Fintech classification
 python3 classify_lenders_nyu.py
 
 # Step 3: Create lossless cleaned copy with numeric fields, review flags, and borrower bins
@@ -21,6 +21,11 @@ python3 analyze_pricing.py
 
 # Step 5: Build standalone interactive HTML dashboard in ../Submit/Project Audible Dashboard.html
 python3 build_dashboard.py
+
+# Step 6: Rebuild the Word deliverables
+python3 build_position_memo.py
+python3 build_technical_memo.py
+python3 build_llm_validation_log.py
 
 # Run all unit tests across all pipeline modules
 python3 -m unittest -v
