@@ -1,6 +1,6 @@
 # Project Audible — Pricing Analysis Report (2025 HMDA)
 
-Generated: 2026-10-26T19:30:47+00:00 by `analyze_pricing.py`.
+Generated: 2026-10-27T15:19:44+00:00 by `analyze_pricing.py`.
 
 ## 1. Headline Finding & AFC Decision Implication
 
@@ -24,6 +24,27 @@ Generated: 2026-10-26T19:30:47+00:00 by `analyze_pricing.py`.
 | Site-built 1-unit properties only (excl. manufactured & multi-unit) | 169,156 | 338,811 | 0.205% | 0.043% | **+16.2** | +12.5 | +36.8 |
 | Excluding all review-flagged loans | 175,540 | 346,049 | 0.217% | 0.046% | **+17.1** | +12.5 | +38.7 |
 | National — all eligible loans | 175,754 | 346,999 | 0.217% | 0.045% | **+17.2** | +12.5 | +38.8 |
+
+### 2a. Fintech vs. Non-Fintech Nonbanks by Borrower Group (baseline filters)
+
+| Dimension | Group | Fintech Loans | Nonbank Loans | Fintech Med Spread | Nonbank Med Spread | Spread Gap (bps) | Rate Gap (bps) | Orig Fee Gap (bps) | Status |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---|
+| `dti_group` | <30% | 30,738 | 152,657 | 0.151% | 0.157% | **-0.6** | +0.0 | +7.2 | Within +/-5 bps |
+| `dti_group` | 30%-<36% | 28,144 | 133,406 | 0.198% | 0.203% | **-0.5** | +0.0 | +7.3 | Within +/-5 bps |
+| `dti_group` | 36%-43% | 53,349 | 252,305 | 0.232% | 0.248% | **-1.6** | +0.0 | +4.0 | Within +/-5 bps |
+| `dti_group` | 44%-49% | 60,802 | 270,313 | 0.239% | 0.258% | **-1.9** | +0.0 | +7.2 | Within +/-5 bps |
+| `cltv_group` | <=80% | 82,828 | 416,702 | 0.054% | 0.078% | **-2.4** | -5.0 | +2.7 | Within +/-5 bps |
+| `cltv_group` | 80.01%-90% | 28,028 | 138,753 | 0.230% | 0.269% | **-3.9** | +0.0 | +6.0 | Within +/-5 bps |
+| `cltv_group` | 90.01%-95% | 38,397 | 163,078 | 0.415% | 0.441% | **-2.6** | +12.5 | +10.1 | Within +/-5 bps |
+| `cltv_group` | >95% | 23,780 | 90,148 | 0.539% | 0.515% | **+2.4** | +12.5 | +9.0 | Within +/-5 bps |
+| `income_group` | <=$75k | 40,814 | 162,213 | 0.211% | 0.197% | **+1.4** | +0.0 | +14.5 | Within +/-5 bps |
+| `income_group` | $75k-$125k | 51,593 | 247,327 | 0.229% | 0.230% | **-0.1** | +0.0 | +6.6 | Within +/-5 bps |
+| `income_group` | $125k-$200k | 46,226 | 230,540 | 0.219% | 0.234% | **-1.5** | +0.0 | +5.0 | Within +/-5 bps |
+| `income_group` | >$200k | 34,400 | 168,601 | 0.184% | 0.231% | **-4.7** | -12.5 | -6.9 | Within +/-5 bps |
+| `loan_amount_group` | <=$200k | 31,810 | 125,204 | 0.310% | 0.269% | **+4.2** | +0.0 | +17.8 | Within +/-5 bps |
+| `loan_amount_group` | $200k-$350k | 61,942 | 285,922 | 0.232% | 0.231% | **+0.1** | +0.0 | +10.5 | Within +/-5 bps |
+| `loan_amount_group` | $350k-$500k | 39,385 | 202,440 | 0.196% | 0.213% | **-1.7** | +0.0 | +6.4 | Within +/-5 bps |
+| `loan_amount_group` | >$500k | 39,896 | 195,115 | 0.141% | 0.200% | **-5.9** | +0.0 | -10.7 | Fintech lower (-5 bps or more) |
 
 ## 3. Single-Dimension Borrower Group Comparisons
 
