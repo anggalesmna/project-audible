@@ -2,7 +2,7 @@
 
 Duke University — Master of Engineering in Financial Technology (Fintech)  
 **FINTECH 590: Advanced Topics in Fintech**  
-Author: **Angga Lesmana** (`angga.lesmana@duke.edu`)
+Author: **Angga Lesmana** & **Violla Tania**
 
 ---
 
