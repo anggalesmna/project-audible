@@ -1,0 +1,14 @@
+{
+  "servers": {
+    "powerbi": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@microsoft/powerbi-modeling-mcp",
+        "--start",
+        "--accept-eula"
+      ]
+    }
+  }
+}
