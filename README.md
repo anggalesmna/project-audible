@@ -15,7 +15,7 @@ Using the official **2025 FFIEC HMDA static snapshot** (1,508,076 eligible purch
 > **Fintech Mortgages Cost +16.4 bps More Than Bank Mortgages, in Line With Other Nonbank Lenders**  
 > In the controlled baseline (valid DTI, CLTV, income and loan amount; DTI below 50%; 511,199 loans), the Fintech median rate spread is **0.213%** (IQR: −0.053% to 0.518%; 173,033 loans, 14 lenders) compared with **0.049%** (IQR: −0.190% to 0.325%; 338,166 loans, 655 banks) for traditional banks. Fintech pricing is higher in **all 16 of 16** standard DTI × CLTV segments; 12 of 14 Fintech lenders sit above the bank median (11 of 14 by 5 bps or more). The unadjusted full sample gives +17.2 bps (lender-clustered 95% CI: +12.2 to +25.3 bps).
 
-**Versus other nonbanks, the gap largely disappears.** Against 600 non-fintech independent mortgage banks (Philadelphia Fed TYPE 40/41; 808,681 loans, same filters), the Fintech median rate spread is **−1.2 bps** (rate gap 0.0 bps; fee gap +6.3 bps). The premium points to the nonbank business model rather than a fintech-specific markup. Public HMDA has no credit scores, so these are observed pricing differences, not proof of intent.
+**Versus other nonbanks, the gap largely disappears.** Against 600 non-fintech independent mortgage banks (Philadelphia Fed TYPE 40/41; 808,681 loans, same filters), the Fintech median rate spread is **−1.2 bps** (rate gap 0.0 bps; fee gap +6.4 bps). The premium points to the nonbank business model rather than a fintech-specific markup. Public HMDA has no credit scores, so these are observed pricing differences, not proof of intent.
 
 **Recommendation for AFC:** launch a voluntary member pricing review **benchmarked against nonbank peers as well as banks**, starting with the segments flagged by `analyze_pricing.py` (`nonbank_priority`) or, if none, origination fees.
 
@@ -26,7 +26,7 @@ Using the official **2025 FFIEC HMDA static snapshot** (1,508,076 eligible purch
 ```text
 Project Audible/
 ├── Submit/                                  # Final Deliverables for Grading & Review
-│   ├── Project Audible Dashboard.html       # Standalone interactive 3-tab HTML dashboard (clean, minimalist)
+│   ├── Project Audible Dashboard.html       # 3-page HTML dashboard: Executive, Analyst, Regulator
 │   ├── Project Audible Position Memo.docx   # 2-page position memo for AFC leadership (recommendation first)
 │   ├── Project Audible Technical Memo.docx  # Strictly 1-page technical memo (data provenance, design choices)
 │   └── Project Audible LLM Validation Log.docx # Full audit log of human-led AI pair programming & corrections
@@ -37,7 +37,8 @@ Project Audible/
 │   ├── classify_lenders_nyu.py              # Step 2: NYU Stern lender classification algorithm
 │   ├── clean_mortgages.py                   # Step 3: Lossless data cleaning, validation & risk binning
 │   ├── analyze_pricing.py                   # Step 4: Stratified pricing medians, IQRs & robustness tests
-│   ├── build_dashboard.py                   # Step 5: Builds the standalone HTML dashboard
+│   ├── build_dashboard.py                   # Step 5: Builds the 3-page HTML dashboard
+│   ├── check_source.py                      # Live FFIEC source check (ETag / Last-Modified)
 │   ├── build_position_memo.py               # Compiles the 2-page Position Memo (.docx)
 │   ├── build_technical_memo.py              # Compiles the 1-page Technical Memo (.docx)
 │   ├── build_llm_validation_log.py          # Compiles the LLM Validation Log (.docx)
@@ -45,22 +46,32 @@ Project Audible/
 │   └── data/2025/
 │       ├── analysis/                        # Processed summary tables, slices JSON, pricing summaries
 │       └── data_quality/                    # Data quality metrics, missingness tables, cleaning audits
+├── run_demo.sh                              # Cold-start demo: tests → source check → build → open
 └── README.md                                # Project overview and reproduction instructions
 ```
 
 ---
 
-## 📊 Interactive Dashboard
+## 📊 Capstone Dashboard (three audience pages, one data model)
 
-The interactive dashboard is located at:
-`Submit/Project Audible Dashboard.html`
+`Submit/Project Audible Dashboard.html`: a single self-contained HTML file (no CDN, no server, no internet needed).
 
-### Features:
-1. **Overview Tab**: What → So What → Now What (computed from the data), 4 KPI cards, a benchmark table comparing Fintech with banks and with other nonbanks, and the 16-cell DTI × CLTV risk matrix.
-2. **Segment Drill-Down Tab**: Interactive 4-column filter slicers (DTI, CLTV, Income, Geography) with visual Paired Bar Comparison and Quartile Distribution (IQR) charts.
-3. **Lenders & Robustness Tab**: Every Fintech lender vs. the bank median, and the robustness table (baseline, Fintech vs. non-fintech nonbanks, incl. DTI ≥50%, site-built only, no review flags, unadjusted) with the baseline lender-clustered 95% CI.
+| Page | Panel | Question it answers | What is on it |
+|---|---|---|---|
+| **Executive · Decision** | Executive | What should AFC do? | Recommendation as the title; What → So What → Now What; three-step card (+16.4 bps vs. banks → −1.2 bps vs. other nonbanks → +6.4 bps fee gap that remains); one dot plot comparing both benchmarks by borrower group; next steps. No filters. |
+| **Analyst · Evidence & Risk** | Risk | When would we be wrong? | State / DTI / CLTV filters; DTI × CLTV matrix; median + IQR comparison; gap by borrower dimension (rate spread or fee); every fintech lender; robustness table with CI; "What would change our recommendation" checked against today's numbers. |
+| **Regulator · Traceability** | Compliance | Can every number be traced? | Fact sheet (each headline number, its formula, HMDA fields and the JSON key it is read from); data lineage 13.5M → 511,199; fixed parameters; sources with versions and SHA-256; live FFIEC source check; what the analysis does not claim. |
 
-*To view the dashboard, simply open `Submit/Project Audible Dashboard.html` in any web browser (Chrome, Safari, Edge, Firefox). It is completely standalone with no internet connection or server required.*
+All pages read the same numbers from the pipeline outputs at build time, with round-half-up formatting identical to the Word memos, so the same fact never shows two values. Open a page directly with `#analyst` or `#reg` at the end of the file URL.
+
+### Run it (cold start, no manual steps)
+
+```bash
+./run_demo.sh          # unit tests → live FFIEC source check → rebuild dashboard from saved results → open it
+./run_demo.sh --full   # rerun all five pipeline steps from the FFIEC download first (~700 MB)
+```
+
+`check_source.py` sends a HEAD request to the FFIEC files listed in `data/2025/manifest.json` and compares ETag and Last-Modified with the archive that was analysed; the result (`match` / `changed` / `unreachable`) is shown on the Regulator page.
 
 ---
 
@@ -82,6 +93,7 @@ python3 download_hmda.py        # Downloads 2025 HMDA archive (~703MB)
 python3 classify_lenders_nyu.py # Downloads the Philadelphia Fed lender file if missing, applies NYU classification
 python3 clean_mortgages.py      # Cleans and bins data
 python3 analyze_pricing.py      # Computes statistics and robustness checks
+python3 check_source.py         # Optional: live check that FFIEC still publishes the same files
 python3 build_dashboard.py      # Generates Submit/Project Audible Dashboard.html
                                 # (--from-json rebuilds the HTML from saved results without the loan-level CSV)
 
