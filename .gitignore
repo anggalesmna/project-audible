@@ -26,3 +26,4 @@ project_audible_data/data/**/raw/*.zip
 project_audible_data/data/**/raw/*.xlsx
 project_audible_data/data/**/mortgages_2025*.csv
 project_audible_data/data/**/lender_classification_2025.csv
+project_audible_data/data/**/source_check.json
