@@ -145,7 +145,9 @@ def build_document_xml(f, date_text):
         r_xml('To: ', bold=True, size_half_pt=18, color=ACCENT),
         r_xml('American Fintech Council (AFC) leadership   |   ', size_half_pt=18, color='334155'),
         r_xml('From: ', bold=True, size_half_pt=18, color=ACCENT),
-        r_xml('Angga Lesmana   |   ', size_half_pt=18, color='334155'),
+        r_xml('Angga Lesmana & Violla Tania   |   ', size_half_pt=18, color='334155'),
+        r_xml('Data As-of: ', bold=True, size_half_pt=18, color=ACCENT),
+        r_xml('2025 HMDA (2026-06-23)   |   ', size_half_pt=18, color='334155'),
         r_xml('Date: ', bold=True, size_half_pt=18, color=ACCENT),
         r_xml(date_text, size_half_pt=18, color='334155'),
     ], before=0, after=6, line=205))
@@ -159,8 +161,7 @@ def build_document_xml(f, date_text):
     lead = [
         t('In 2025, fintech borrowers paid more than bank borrowers with comparable observed profiles. '),
         t(f'The fintech median rate spread was {bps(b["gap_rs"])} higher than at banks ({pct(b["rs_f"])} vs. {pct(b["rs_b"])}), ', bold=True),
-        t(f'in {"all " if f["cells_higher"] == f["cells_total"] else ""}{f["cells_higher"]} of {f["cells_total"]} debt-to-income × loan-to-value groups and {f["states_higher"]} of the '
-          f'{f["states_total"]} largest states. '),
+        t(f'across {"all " if f["cells_higher"] == f["cells_total"] else ""}{f["cells_higher"]} of {f["cells_total"]} debt-to-income × loan-to-value risk groups (F-01, F-08). '),
     ]
     if state == 'peer':
         lead += [
@@ -183,22 +184,23 @@ def build_document_xml(f, date_text):
     parts.append(section_heading('What the data shows'))
     parts.append(bullet_p(
         'Versus banks, the premium is robust. ',
-        f'Sample: 2025 HMDA conventional conforming 30-year fixed purchase loans; {b["nf"]:,} loans from {b["lf"]} fintech lenders '
+        f'Sample (as of 2026-06-23): 2025 HMDA conventional conforming 30-year fixed purchase loans; {b["nf"]:,} loans from {b["lf"]} fintech lenders '
         f'(NYU Stern list) vs. {b["nb"]:,} from {b["lb"]} banks, valid borrower data, DTI below 50% '
-        f'({f["ci_label"]}: {bps(f["ci"][0])} to {bps(f["ci"][1])}). {ls["above_bank"]} of {ls["total"]} fintech lenders price above the '
-        f'bank median. Rocket Mortgage is {rk["share_of_fintech_loans_pct"]:.0f}% of fintech loans; without it the gap is '
-        f'{bps(f["ex_rocket_nat"]) if f["ex_rocket_nat"] is not None else "unchanged"}.' if rk else '', BODY))
+        f'({f["ci_label"]}: {bps(f["ci"][0])} to {bps(f["ci"][1])}; F-11). Upfront origination fees sit {bps(b["gap_oc"])} higher than banks '
+        f'(F-06: roughly ${b["gap_oc"] * 30:,.0f} more upfront on a $300k loan). {ls["above_bank"]} of {ls["total"]} fintech lenders price above the '
+        f'bank median (F-09). Rocket Mortgage is {rk["share_of_fintech_loans_pct"]:.0f}% of fintech loans; without it the gap is '
+        f'{bps(f["ex_rocket_nat"]) if f["ex_rocket_nat"] is not None else "unchanged"} (F-10).' if rk else '', BODY))
     if state != 'pending':
         parts.append(bullet_p(
             'Versus other nonbanks, it largely disappears. ' if state == 'peer' else 'Versus other nonbanks, a premium remains. ',
             f'Compared with {nb.get("comparator_lenders") or nb["bank_lenders"]:,} non-fintech nonbank lenders '
             f'({nb.get("comparator_loans_rs") or nb["bank_loans_rs"]:,} loans, same filters), the fintech rate-spread gap is '
-            f'{bps(nb["rate_spread_gap_bps"])}, the rate gap {bps(nb["interest_rate_gap_bps"])} and the fee gap '
-            f'{bps(nb["orig_pct_gap_bps"])}. ' + ('Fees are the one gap that remains.' if state == 'peer' else ''), BODY))
+            f'{bps(nb["rate_spread_gap_bps"])} (F-02), the rate gap {bps(nb["interest_rate_gap_bps"])} and the fee gap '
+            f'{bps(nb["orig_pct_gap_bps"])} (F-03). ' + ('Fees are the one gap that remains.' if state == 'peer' else ''), BODY))
     parts.append(bullet_p(
         'Versus banks, the gap is largest for borrowers with the least room to absorb it. ',
-        f'Borrowers with under 5% down face {s["cltv_high"]["gap_rs"] / s["cltv_low"]["gap_rs"]:.1f} times the gap of borrowers with 20% down; '
-        f'for incomes of $75k or less it comes through fees ({bps(s["inc_low"]["gap_oc"])}), not the note rate ({bps(s["inc_low"]["gap_ir"])}).', BODY))
+        f'Borrowers with under 5% down face {s["cltv_high"]["gap_rs"] / s["cltv_low"]["gap_rs"]:.1f} times the gap of borrowers with 20% down (F-07: {bps(s["cltv_high"]["gap_rs"])}); '
+        f'for incomes of $75k or less the bank gap comes through fees ({bps(s["inc_low"]["gap_oc"])}), not the note rate ({bps(s["inc_low"]["gap_ir"])}).', BODY))
 
     def nb_cells(dim, group):
         r = f['nb_seg'].get((dim, group))
@@ -207,22 +209,20 @@ def build_document_xml(f, date_text):
         mark = '' if r['coverage_ok'] else ' (thin)'
         return [bps(r['rate_spread_gap_bps']) + mark, bps(r['orig_pct_gap_bps']) + mark]
 
-    rows = [['All comparable loans', f'{b["nf"]:,} / {b["nb"]:,}', bps(b['gap_rs']),
+    rows = [['All comparable loans (F-01 / F-02 / F-03)', f'{b["nf"]:,} / {b["nb"]:,}', bps(b['gap_rs']),
              bps(nb['rate_spread_gap_bps']) if state != 'pending' else 'rerun',
              bps(nb['orig_pct_gap_bps']) if state != 'pending' else 'rerun']]
-    for label, key, dim, group in [('Down payment 20%+ (CLTV ≤80%)', 'cltv_low', 'cltv_group', '<=80%'),
-                                   ('Down payment <5% (CLTV >95%)', 'cltv_high', 'cltv_group', '>95%'),
-                                   ('Loan ≤$200k', 'loan_small', 'loan_amount_group', '<=$200k'),
-                                   ('Income ≤$75k', 'inc_low', 'income_group', '<=$75k'),
-                                   ('Income >$200k', 'inc_high', 'income_group', '>$200k')]:
+    for label, key, dim, group in [('Loan ≤$200k (F-04 priority)', 'loan_small', 'loan_amount_group', '<=$200k'),
+                                   ('Income ≤$75k (F-05 priority)', 'inc_low', 'income_group', '<=$75k'),
+                                   ('Down payment <5% (CLTV >95%; F-07)', 'cltv_high', 'cltv_group', '>95%')]:
         r = s[key]
         rows.append([label, f'{r["nf"]:,} / {r["nb"]:,}', bps(r['gap_rs'])] + nb_cells(dim, group))
     parts.append(table_xml(
         ['Borrower group', 'Loans (Fintech / Bank)', 'Rate-spread gap vs. banks', 'Rate-spread gap vs. nonbanks', 'Fee gap vs. nonbanks'],
-        rows, [3000, 1900, 1900, 1900, 1812]))
-    note = ('Gap = Fintech median − comparator median. Rate spread = APR − APOR (benchmark rate on the lock date). '
-            'Nonbanks = non-fintech independent mortgage banks (Philadelphia Fed TYPE 40/41). Source: FFIEC 2025 HMDA; '
-            'dashboard Overview tab and technical memo.')
+        rows, [3200, 1850, 1850, 1850, 1762]))
+    note = ('Gap = Fintech median − comparator median. Rate spread = APR − APOR (lock date). '
+            'Nonbanks = non-fintech independent mortgage banks (TYPE 40/41). Source: 2025 FFIEC HMDA (as of 2026-06-23); '
+            'dashboard Executive & Analyst pages (Fact Ledger F-01–F-12).')
     if not f['nb_seg']:
         note += ' "rerun" = segment benchmark not yet computed; rerun analyze_pricing.py.'
     parts.append(p_xml([r_xml(note, italic=True, size_half_pt=16, color='475569')], before=20, after=20, line=200))
@@ -270,7 +270,7 @@ def build_document_xml(f, date_text):
             f'<w:document xmlns:w="{W_MAIN}"><w:body>{"".join(parts)}{sect_pr}</w:body></w:document>')
 
 
-def main(date_text='October 26, 2026'):
+def main(date_text='November 17, 2026'):
     base_dir = Path(__file__).resolve().parent.parent
     analysis_dir = Path(__file__).resolve().parent / 'data' / '2025' / 'analysis'
     f = facts(*load(analysis_dir))

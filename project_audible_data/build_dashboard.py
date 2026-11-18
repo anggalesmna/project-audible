@@ -781,7 +781,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       margin-inline-end: 0.25rem;
       vertical-align: -0.05rem;
     }
-    .dot-bank { background: var(--bank-fill); }
+    .dot-bank { background: var(--fintech-fill); }
     .dot-nb { background: #0f766e; }
     .db-row {
       display: grid;
@@ -823,7 +823,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
-    .db-lab-bank { inset-block-start: 0; color: var(--bank-col); }
+    .db-lab-bank { inset-block-start: 0; color: var(--fintech-col); }
     .db-lab-nb { inset-block-end: 0; color: #0f766e; }
     .db-fee { font-size: 0.875rem; color: var(--text-muted); }
     .db-fee.fee-hot { color: var(--fintech-col); }
@@ -937,10 +937,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <div>
                 <h2 class="panel-title">Fintech borrowers pay more than at banks, but about the same as at other nonbanks</h2>
                 <p class="panel-subtitle">
-                  Median rate-spread gap (fintech minus comparator, bps) by borrower group.
-                  <span class="dot-key"><i class="dot dot-bank"></i>vs. banks</span>
-                  <span class="dot-key"><i class="dot dot-nb"></i>vs. other nonbanks</span>
-                  Right column: origination-fee gap vs. other nonbanks.
+                  Median rate-spread gap (fintech minus comparator, bps) &bull; 2025 HMDA (as of <span id="ex-asof"></span>).
+                  <span class="dot-key"><i class="dot dot-bank"></i>vs. banks (Fintech higher &ge; +5 bps)</span>
+                  <span class="dot-key"><i class="dot dot-nb"></i>vs. other nonbanks (in line, &plusmn;5 bps)</span>
+                  Right column: origination-fee gap vs. other nonbanks (bps).
                 </p>
               </div>
             </div>
@@ -973,7 +973,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <div class="panel-card">
               <div>
                 <h2 class="panel-title">Fintech prices higher in <span id="matrix-count"></span> DTI &times; CLTV risk cells</h2>
-                <p class="panel-subtitle">Rate-spread gap vs. banks (bps). Click a cell to drill down; click again to clear. Grey = fewer than 100 loans per side.</p>
+                <p id="matrix-sub" class="panel-subtitle">Rate-spread gap vs. banks (bps) &bull; 2025 HMDA. Click a cell to drill down; click again to clear. Grey = fewer than 100 loans per side.</p>
               </div>
               <div class="table-scroll" tabindex="0">
                 <table class="clean-table">
@@ -996,7 +996,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <div class="panel-header">
                 <div>
                   <h2 id="drill-title" class="panel-title"></h2>
-                  <p class="panel-subtitle">Medians are not the whole story: the shaded band is the middle 50% of loans.</p>
+                  <p id="drill-sub" class="panel-subtitle">Medians and middle 50% (IQR) in % and bps. Click a matrix cell or segment bar to slice.</p>
                 </div>
                 <button type="button" id="btn-reset" class="btn-reset">Reset</button>
               </div>
@@ -1140,8 +1140,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
           <div class="panel-card">
             <div>
-              <h2 class="panel-title">Fact sheet: the numbers used on every page, in the memo and on slide 1</h2>
-              <p class="panel-subtitle">Values are read from the pipeline outputs at build time; none are typed by hand.</p>
+              <h2 class="panel-title">Fact ledger: one table cited across Executive (E), Risk (R), and Compliance (C)</h2>
+              <p class="panel-subtitle">Every number displayed across the dashboard and Position Memo has a ledger ID; hover any KPI, row, or chart bar to cite its ID. Values are read from pipeline outputs at build time.</p>
             </div>
             <div class="table-scroll" tabindex="0">
               <table class="clean-table reg-table">
@@ -1150,8 +1150,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     <th scope="col">ID</th>
                     <th scope="col" style="text-align:start;">Claim</th>
                     <th scope="col">Value</th>
-                    <th scope="col" style="text-align:start;">Definition &amp; HMDA fields</th>
-                    <th scope="col" style="text-align:start;">Computed in</th>
+                    <th scope="col" style="text-align:start;">Measure / source (HMDA field &amp; JSON key)</th>
+                    <th scope="col">As-of</th>
+                    <th scope="col">Used in</th>
                   </tr>
                 </thead>
                 <tbody id="facts-tbody"></tbody>
@@ -1285,6 +1286,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (isNaN(d)) return iso;
       return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" });
     }
+    function fmtIsoDate(iso) {
+      if (!iso) return "2026-06-23";
+      const d = new Date(iso);
+      return isNaN(d) ? String(iso) : d.toISOString().slice(0, 10);
+    }
+    const LAR_DL = (PROV.downloads || {}).lar || {};
+    const AS_OF = fmtIsoDate(LAR_DL.last_modified);
 
     /* ---------- Fact sheet: single source for every page ---------- */
     const HM = DATA.headline_metrics;
@@ -1297,9 +1305,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     DTI_ORDER.forEach((d) => CLTV_ORDER.forEach((c) => cells16.push(DATA.slices_data.slices[`ALL|${d}|${c}`])));
     const robGaps = DATA.robustness_checks.filter((r) => !isPeerRow(r)).map((r) => r.rate_spread_gap_bps).filter((v) => v !== null);
     const PRIORITY = (DATA.nonbank_priority && DATA.nonbank_priority.segments) || [];
+    const hiCltvBank = bankBar("cltv|>95%");
+    const hiCltvNB = nbSeg("cltv_group", ">95%");
 
     const F = {
-      gapBank: BASE.gap_rs, rsF: BASE.rs_f, rsB: BASE.rs_b, feeBank: BASE.gap_oc, ocB: BASE.oc_b,
+      gapBank: BASE.gap_rs, rsF: BASE.rs_f, rsB: BASE.rs_b, feeBank: BASE.gap_oc, ocB: BASE.oc_b, ocF: BASE.oc_f,
       nF: BASE.nf, nB: BASE.nb, lF: BASE.lf, lB: BASE.lb,
       gapNB: NB ? NB.rate_spread_gap_bps : null,
       feeNB: NB ? NB.orig_pct_gap_bps : null,
@@ -1318,6 +1328,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       exRocket: PROV.ex_rocket ? PROV.ex_rocket.rate_spread_gap_bps : null,
       rocketShare: DATA.fintech_lenders.length ? DATA.fintech_lenders[0].share_of_fintech_loans_pct : null,
       rocketName: DATA.fintech_lenders.length ? DATA.fintech_lenders[0].lender_name : "",
+      hiCltvGapBank: hiCltvBank ? hiCltvBank.gap_rs : null,
+      hiCltvGapNB: hiCltvNB ? hiCltvNB.rate_spread_gap_bps : null,
+      hiCltvFeeNB: hiCltvNB ? hiCltvNB.orig_pct_gap_bps : null,
       priority: PRIORITY,
     };
     const priorityText = PRIORITY.length
@@ -1354,6 +1367,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       items.forEach((item) => {
         const row = document.createElement("div");
         row.className = "bar-row" + (onClickRow ? " interactive-row" : "") + (item.active ? " active-slice" : "");
+        if (item.tip) row.title = item.tip;
         if (onClickRow) row.addEventListener("click", () => onClickRow(item));
         const lbl = document.createElement("div");
         lbl.className = "bar-label";
@@ -1392,39 +1406,44 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         `AFC should launch a voluntary member pricing review benchmarked against nonbank peers, starting with origination fees on ${priorityText}`;
       const baseTotal = (F.nF !== null && F.nB !== null) ? fmtN(F.nF + F.nB) : "N/A";
       $("exec-sub").innerHTML =
-        `2025 HMDA Conforming Baseline: <strong>${baseTotal}</strong> loans across <strong>${fmtN(F.lF)}</strong> Fintechs and <strong>${fmtN(F.lB)}</strong> depository banks` +
+        `2025 HMDA Conforming Baseline (as of ${AS_OF}): <strong>${baseTotal}</strong> loans across <strong>${fmtN(F.lF)}</strong> Fintechs and <strong>${fmtN(F.lB)}</strong> depository banks` +
         (F.nNB !== null ? `, plus <strong>${fmtN(F.nNB)}</strong> loans across <strong>${fmtN(F.lNB)}</strong> nonbank peers` : "") +
         ` (valid borrower data, DTI &lt;50%).`;
+      $("ex-asof").textContent = AS_OF;
 
       $("ex-k1").textContent = fmtBps(F.gapBank);
       $("ex-k1").className = "kpi-value fintech-higher";
+      $("ex-k1").parentElement.title = `Fact Ledger [F-01, F-06, F-08] (as of ${AS_OF}): ${fmtBps(F.gapBank)} spread (${fmtPct(F.rsF)} vs. ${fmtPct(F.rsB)}), ${fmtBps(F.feeBank)} fees across ${F.cellsHigher}/${F.cellsTotal} cells.`;
       const dollarFee = F.feeBank !== null ? ` (~$${Math.round(F.feeBank * 30).toLocaleString("en-US")} more upfront on a $300k loan)` : "";
       $("ex-k1-sub").innerHTML =
         `Rate-spread gap (<strong>${fmtPct(F.rsF)}</strong> vs. <strong>${fmtPct(F.rsB)}</strong>) and upfront origination fees (<strong>${fmtBps(F.feeBank)}</strong>${dollarFee}) exceed ${fmtN(F.lB)} banks across ${F.cellsHigher === F.cellsTotal ? "all " : ""}<strong>${F.cellsHigher} of ${F.cellsTotal}</strong> risk cells.`;
       $("ex-k2").textContent = fmtBps(F.gapNB);
+      $("ex-k2").parentElement.title = `Fact Ledger [F-02] (as of ${AS_OF}): ${fmtBps(F.gapNB)} rate-spread gap vs. ${fmtN(F.lNB)} non-fintech nonbanks (${fmtPct(F.rsF)} vs. ${fmtPct(F.rsNB)}).`;
       $("ex-k2-sub").innerHTML = F.gapNB === null
         ? "Nonbank comparison not available."
         : `All ${fmtN(F.lF)} Fintechs are nonbanks. Against ${fmtN(F.lNB)} nonbank peers, rate spread is within &plusmn;${MATERIAL_BPS} bps &mdash; a nonbank funding model effect, not a rate markup.`;
       $("ex-k3").textContent = fmtBps(F.feeNB);
+      $("ex-k3").parentElement.title = `Fact Ledger [F-03, F-04, F-05] (as of ${AS_OF}): ${fmtBps(F.feeNB)} overall origination-fee gap vs. nonbank peers (${priorityFees}).`;
       $("ex-k3-sub").innerHTML = F.feeNB === null
         ? "Nonbank fee comparison not available."
         : `Upfront origination fees still exceed nonbank peers` + (priorityFees ? ` &mdash; peaking at <strong>${priorityFees}</strong>.` : `.`);
       $("ex-step2-focus").textContent = priorityText;
 
       const rows = [
-        { label: "All comparable loans", sub: `${fmtN(F.nF)} fintech / ${fmtN(F.nB)} bank loans`, bank: BASE.gap_rs, nb: F.gapNB, fee: F.feeNB, prio: false },
+        { label: "All comparable loans", sub: `${fmtN(F.nF)} fintech / ${fmtN(F.nB)} bank loans`, bank: BASE.gap_rs, nb: F.gapNB, fee: F.feeNB, prio: false, tip: `[F-01, F-02, F-03] Baseline as of ${AS_OF}` },
       ];
       [
-        ["loan", "loan_amount_group", "<=$200k", "Loan ≤$200k"],
-        ["income", "income_group", "<=$75k", "Income ≤$75k"],
-        ["cltv", "cltv_group", ">95%", "Down payment under 5% (CLTV >95%)"],
-      ].forEach(([k, dim, grp, label]) => {
+        ["loan", "loan_amount_group", "<=$200k", "Loan ≤$200k", "[F-04] Priority #1: Loan <=$200k"],
+        ["income", "income_group", "<=$75k", "Income ≤$75k", "[F-05] Priority #2: Income <=$75k"],
+        ["cltv", "cltv_group", ">95%", "Down payment under 5% (CLTV >95%)", "[F-07] High-CLTV segment"],
+      ].forEach(([k, dim, grp, label, tip]) => {
         const b = bankBar(`${k}|${grp}`);
         const n = nbSeg(dim, grp);
         rows.push({
           label, sub: b ? `${fmtN(b.nf)} fintech / ${fmtN(b.nb)} bank loans` : "",
           bank: b ? b.gap_rs : null, nb: n ? n.rate_spread_gap_bps : null, fee: n ? n.orig_pct_gap_bps : null,
           prio: PRIORITY.some((p) => p.dimension === dim && p.group === grp),
+          tip: `${tip} (as of ${AS_OF})`,
         });
       });
 
@@ -1437,6 +1456,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       rows.forEach((r) => {
         const row = document.createElement("div");
         row.className = "db-row" + (r.prio ? " db-prio" : "");
+        row.title = r.tip;
         const a = pos(r.nb ?? 0), b = pos(r.bank ?? 0);
         row.innerHTML =
           `<div class="bar-label">${r.label}${r.prio ? ' <span class="start-tag">start here</span>' : ""}<span class="bar-label-sub">${r.sub}</span></div>` +
@@ -1466,6 +1486,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         `<strong>Stage 2 (vs. Nonbank Peers):</strong> switch the Segment &amp; Lender charts below to <em>vs. Nonbank Peers</em> and <em>Origination fee</em> to see rate spreads drop to <strong>${fmtBps(F.gapNB)}</strong> while fees remain <strong>${fmtBps(F.feeNB)}</strong>` +
         (priorityFees ? ` (peaking at ${priorityFees}).` : `.`);
       $("matrix-count").textContent = `${F.cellsHigher} of ${F.cellsTotal}`;
+      $("matrix-sub").textContent = `Rate-spread gap vs. banks (bps) • 2025 HMDA (as of ${AS_OF}). Click a cell to drill down; click again to clear. Grey = fewer than 100 loans per side.`;
     }
 
     function updateKPIsAndDrill() {
@@ -1473,19 +1494,24 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const s = getSlice(st, dti, cltv);
       const isAll = dti === "ALL" && cltv === "ALL";
       const label = isAll ? "All comparable loans" : `DTI ${dti === "ALL" ? "all" : dti} • CLTV ${cltv === "ALL" ? "all" : cltv}`;
-      $("drill-title").textContent = `Selected slice: ${label}`;
       $("btn-reset").hidden = isAll;
       const badge = $("kpi-cov-badge");
       if (!s || s.nf === 0 || s.nb === 0) {
+        $("drill-title").textContent = `${label}: no matching loans`;
+        $("drill-sub").textContent = `Units: % and bps • 2025 HMDA (as of ${AS_OF}).`;
         badge.textContent = "No coverage";
         badge.className = "badge badge-warn";
         $("kpi-cov-loans").textContent = "No matching loans in both groups; click Reset.";
         return;
       }
+      const sliceFact = isAll ? "F-01, F-06" : "F-08";
+      $("drill-title").textContent = `${label}: Fintech spreads ${fmtBps(s.gap_rs)} and fees ${fmtBps(s.gap_oc)} vs. banks`;
+      $("drill-sub").textContent = `Selected slice: ${label} • Medians & middle 50% (IQR) in % and bps • 2025 HMDA (as of ${AS_OF}).`;
       $("kpi-cov-loans").textContent = `${fmtN(s.nf)} fintech (${s.lf} lenders) vs. ${fmtN(s.nb)} bank (${s.lb} lenders)`;
       if (!s.ok) { badge.textContent = "Low coverage: do not interpret"; badge.className = "badge badge-warn"; }
       else if (s.gap_rs >= MATERIAL_BPS) { badge.textContent = `Material: gap ≥ +${MATERIAL_BPS} bps`; badge.className = "badge badge-ok"; }
       else { badge.textContent = `Below the ${MATERIAL_BPS} bps materiality line`; badge.className = "badge badge-neutral"; }
+      badge.title = `Fact Ledger [${isAll ? "F-01" : "F-08"}] (as of ${AS_OF})`;
 
       const lo = -0.6, hi = 1.2;
       const z = clampPct(0, lo, hi);
@@ -1500,6 +1526,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       $("vc-rs-f").textContent = fmtPct(s.rs_f);
       $("vc-rs-b").textContent = fmtPct(s.rs_b);
       $("vc-rs-badge").textContent = fmtBps(s.gap_rs);
+      $("vc-rs-badge").title = `Fact Ledger [${isAll ? "F-01" : "F-08"}] (as of ${AS_OF}): rate-spread gap = ${fmtBps(s.gap_rs)}`;
       $("vc-iqr-caption").textContent =
         `Middle 50%: fintech ${fmtPct(s.f_p25, 2)} to ${fmtPct(s.f_p75, 2)}; bank ${fmtPct(s.b_p25, 2)} to ${fmtPct(s.b_p75, 2)}. Scale −0.6% to +1.2%; grey line = 0 (APR equals APOR).`;
       $("bar-oc-f").style.inlineSize = `${clampPct(s.oc_f ?? 0, 0, 2.0)}%`;
@@ -1507,7 +1534,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       $("vc-oc-f").textContent = fmtPct(s.oc_f);
       $("vc-oc-b").textContent = fmtPct(s.oc_b);
       $("vc-oc-badge").textContent = fmtBps(s.gap_oc);
+      $("vc-oc-badge").title = `Fact Ledger [${isAll ? "F-06" : sliceFact}] (as of ${AS_OF}): origination-fee gap = ${fmtBps(s.gap_oc)}`;
       $("vc-ir-badge").textContent = fmtBps(s.gap_ir);
+      $("vc-ir-badge").title = `Median contract interest-rate gap (2025 HMDA as of ${AS_OF})`;
       $("vc-ir-text").textContent = `Fintech ${fmtPct(s.ir_f)} vs. bank ${fmtPct(s.ir_b)}. Note rates are quoted in 1/8-point steps, so medians move in 12.5 bps increments; the rate spread above is the main measure.`;
       announcer.textContent = `Updated slice: rate spread gap ${fmtBps(s.gap_rs)}.`;
     }
@@ -1517,16 +1546,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const order = { cltv: CLTV_ORDER, dti: DTI_ORDER, loan: LOAN_ORDER, income: INC_ORDER }[activeDim];
       const dimMap = { cltv: "cltv_group", dti: "dti_group", loan: "loan_amount_group", income: "income_group" };
       const dimTitle = { cltv: "down payment (CLTV)", dti: "debt-to-income", loan: "loan size", income: "borrower income" }[activeDim];
-      const metricTitle = activeMetric === "gap_rs" ? "Rate-spread gap" : "Origination-fee gap";
       const isNB = activeComp === "nonbank";
-      $("overview-chart-title").textContent = isNB
-        ? `${metricTitle} vs. nonbank peers by ${dimTitle}`
-        : `${metricTitle} vs. banks by ${dimTitle}`;
-      $("overview-chart-sub").textContent = isNB
-        ? `Fintech minus non-fintech nonbank median (bps); 0 = parity.`
-        : `Fintech minus bank median (bps); 0 = parity. Bars for CLTV and DTI are clickable filters.`;
-
       const nbField = activeMetric === "gap_rs" ? "rate_spread_gap_bps" : "orig_pct_gap_bps";
+      const segTip = (bin) => {
+        if (bin === "<=$200k" && isNB) return `Fact Ledger [F-04] (as of ${AS_OF})`;
+        if (bin === "<=$75k" && isNB) return `Fact Ledger [F-05] (as of ${AS_OF})`;
+        if (bin === ">95%") return `Fact Ledger [F-07] (as of ${AS_OF})`;
+        return `Fact Ledger [${isNB ? (activeMetric === "gap_rs" ? "F-02" : "F-03") : (activeMetric === "gap_rs" ? "F-01, F-08" : "F-06")}] (as of ${AS_OF})`;
+      };
       const items = order.map((bin) => {
         const isActive = (activeDim === "cltv" && cltvSelect.value === bin) || (activeDim === "dti" && dtiSelect.value === bin);
         if (isNB) {
@@ -1537,6 +1564,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             sub: n ? `${fmtN(n.fintech_loans_rs)} fintech • ${fmtN(n.comparator_loans_rs ?? n.bank_loans_rs)} nonbanks${n.coverage_ok ? "" : " (low N)"}${isPrio ? " • review priority" : ""}` : "No data",
             val: n ? n[nbField] : null, ok: n ? n.coverage_ok : false,
             active: isActive || isPrio,
+            tip: segTip(bin),
           };
         }
         const b = DATA.slices_data.bars[`${st}|${activeDim}|${bin}`];
@@ -1545,8 +1573,28 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           sub: b ? `${fmtN(b.nf)} fintech • ${fmtN(b.nb)} bank${b.ok ? "" : " (low N)"}` : "No data",
           val: b ? b[activeMetric] : null, ok: b ? b.ok : false,
           active: isActive,
+          tip: segTip(bin),
         };
       });
+      const valid = items.filter((x) => x.val !== null && x.val !== undefined && x.ok);
+      const minVal = valid.length ? Math.min(...valid.map((x) => x.val)) : null;
+      const maxItem = valid.length ? valid.reduce((a, b) => (b.val > a.val ? b : a)) : null;
+      const allMat = valid.length && valid.every((x) => x.val >= MATERIAL_BPS);
+      if (!maxItem) {
+        $("overview-chart-title").textContent = `${activeMetric === "gap_rs" ? "Rate-spread" : "Origination-fee"} gap vs. ${isNB ? "nonbank peers" : "banks"} by ${dimTitle}`;
+      } else if (isNB && activeMetric === "gap_rs") {
+        $("overview-chart-title").textContent = `Vs. nonbank peers, rate-spread gaps across ${dimTitle} stay near zero (${fmtBps(minVal)} to ${fmtBps(maxItem.val)})`;
+      } else if (isNB) {
+        $("overview-chart-title").textContent = `Vs. nonbank peers, origination-fee gaps by ${dimTitle} peak in ${maxItem.label} (${fmtBps(maxItem.val)})`;
+      } else if (activeMetric === "gap_rs") {
+        $("overview-chart-title").textContent = `Vs. banks, fintech rate spreads are higher across ${allMat ? "all " : ""}${dimTitle} bands (${fmtBps(minVal)} to ${fmtBps(maxItem.val)})`;
+      } else {
+        $("overview-chart-title").textContent = `Vs. banks, fintech upfront fees peak in ${maxItem.label} by ${dimTitle} (${fmtBps(maxItem.val)})`;
+      }
+      $("overview-chart-sub").textContent = isNB
+        ? `Units: bps (fintech minus non-fintech nonbank median; 0 = parity) • 2025 HMDA (as of ${AS_OF}).`
+        : `Units: bps (fintech minus bank median; 0 = parity) • 2025 HMDA (as of ${AS_OF}). Bars for CLTV and DTI are clickable filters.`;
+
       const canFilter = activeDim === "cltv" || activeDim === "dti";
       const ceil = isNB ? (activeMetric === "gap_rs" ? 10 : 25) : (activeMetric === "gap_rs" ? 35 : 70);
       buildBarRows($("overview-bar-container"), items, isNB ? -10 : -5, ceil, canFilter ? (item) => {
@@ -1585,6 +1633,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             td.style.backgroundColor = heatColor(s.gap_rs, s.ok);
             const c = !s.ok ? "#64748b" : s.gap_rs >= 0 ? "#92400e" : "#1e40af";
             const tag = s.ok ? `F ${fmtN(s.nf)} / B ${fmtN(s.nb)}` : `Low N (F ${s.nf})`;
+            td.title = `Fact Ledger [F-08${cltv === ">95%" ? ", F-07" : ""}] (as of ${AS_OF}): DTI ${dti} × CLTV ${cltv} = ${fmtBps(s.gap_rs)}`;
             td.innerHTML = `<span class="cell-gap" style="color:${c};">${fmtBps(s.gap_rs, false)}</span><span class="cell-meta">${tag}</span>`;
           }
           td.addEventListener("click", () => {
@@ -1621,11 +1670,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         label: r.lender_name,
         sub: `${fmtN(r.total_loans)} loans (${r.share_of_fintech_loans_pct.toFixed(1)}% of fintech)`,
         val: getGap(r), ok: r.total_loans >= 100, active: false,
+        tip: `Fact Ledger [F-09${r.lender_name === F.rocketName ? ", F-10" : ""}] (as of ${AS_OF})`,
       })), -30, isRS ? 50 : 80, null);
       $("lender-summary").innerHTML =
-        `${isRS ? "Rate-spread" : "Origination-fee"} gap vs. ${compLabel} (${fmtPct(refMed, isRS ? 3 : 2)}). ` +
+        `Units: bps (${isRS ? "rate-spread" : "origination-fee"} gap vs. ${compLabel} ${fmtPct(refMed, isRS ? 3 : 2)}) &bull; 2025 HMDA (as of ${AS_OF}). ` +
         `${above5} of ${total} are above by ${MATERIAL_BPS} bps or more; equal-weighted lender gap ${fmtBps(eqGap)}.` +
-        (isBank && isRS && F.exRocket !== null ? ` ${F.rocketName} is ${F.rocketShare.toFixed(0)}% of fintech loans; without it the gap is <strong>${fmtBps(F.exRocket)}</strong>.` : "");
+        (isBank && isRS && F.exRocket !== null ? ` ${F.rocketName} is ${F.rocketShare.toFixed(0)}% of fintech loans; without it the gap is <strong title="Fact Ledger [F-10]">${fmtBps(F.exRocket)}</strong>.` : "");
     }
 
     function renderLendersAndRobustness() {
@@ -1639,43 +1689,51 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const robSpecs = DATA.robustness_checks.filter((r) => !isPeerRow(r)).map((r) => r.slice.split(" (")[0].toLowerCase());
       const rows = [
         [`Gap vs. banks falls below +${MATERIAL_BPS} bps in most risk cells`, "Drop the review: no premium to explain",
-          `${F.cellsHigher} of ${F.cellsTotal} cells at +${MATERIAL_BPS} bps or more`, pill(F.cellsHigher > F.cellsTotal / 2)],
+          `${F.cellsHigher} of ${F.cellsTotal} cells at +${MATERIAL_BPS} bps or more`, pill(F.cellsHigher > F.cellsTotal / 2), `Fact Ledger [F-08] (as of ${AS_OF})`],
         [`Gap vs. banks disappears under a different sample definition`, "Treat the premium as a sampling artifact",
           `<span title="${robSpecs.join("; ")}">${fmtBps(F.robMin)} to ${fmtBps(F.robMax)} across ${robGaps.length} definitions</span>` +
           (F.ci[0] !== null ? `; lender-clustered 95% CI ${fmtBps(F.ci[0])} to ${fmtBps(F.ci[1])}` : ""),
-          pill(F.robMin >= MATERIAL_BPS && (F.ci[0] === null || F.ci[0] > 0))],
+          pill(F.robMin >= MATERIAL_BPS && (F.ci[0] === null || F.ci[0] > 0)), `Fact Ledger [F-11] (as of ${AS_OF})`],
         ["The premium is driven by a single lender", "Treat it as a lender issue, not an AFC program",
           F.exRocket !== null ? `Without ${F.rocketName}: ${fmtBps(F.exRocket)}; ${F.lendersAbove} of ${F.lendersTotal} lenders above` : `${F.lendersAbove} of ${F.lendersTotal} lenders above`,
-          pill(F.exRocket === null || F.exRocket >= MATERIAL_BPS)],
+          pill(F.exRocket === null || F.exRocket >= MATERIAL_BPS), `Fact Ledger [F-09, F-10] (as of ${AS_OF})`],
         [`Gap vs. other nonbanks rises above +${MATERIAL_BPS} bps`, "Reframe as a fintech-specific markup and widen the review",
-          `${fmtBps(F.gapNB)} on rate spread`, pill(F.gapNB !== null && F.gapNB < MATERIAL_BPS, "Framing holds", "Reframe")],
+          `${fmtBps(F.gapNB)} on rate spread`, pill(F.gapNB !== null && F.gapNB < MATERIAL_BPS, "Framing holds", "Reframe"), `Fact Ledger [F-02] (as of ${AS_OF})`],
         [`Fee gap vs. nonbank peers falls below +${MATERIAL_BPS} bps in the priority groups`, "Move the review off fees",
-          priorityFees || "No priority groups", pill(minPrioFee !== null && minPrioFee >= MATERIAL_BPS, "Fee focus holds", "Refocus")],
+          priorityFees || "No priority groups", pill(minPrioFee !== null && minPrioFee >= MATERIAL_BPS, "Fee focus holds", "Refocus"), `Fact Ledger [F-04, F-05] (as of ${AS_OF})`],
         ["Member data (credit score, LLPAs, lock date) explains the gap", "Publish the result as evidence for members",
-          "Not testable with public HMDA; this is Step 2 of the review", `<span class="badge badge-neutral">Open</span>`],
+          "Not testable with public HMDA; this is Step 2 of the review", `<span class="badge badge-neutral">Open</span>`, `Scope limitation (as of ${AS_OF})`],
       ];
       $("cond-tbody").innerHTML = rows.map((r) =>
-        `<tr><td style="text-align:start;">${r[0]}</td><td style="text-align:start;">${r[1]}</td><td style="text-align:start;">${r[2]}</td><td>${r[3]}</td></tr>`).join("");
+        `<tr title="${r[4]}"><td style="text-align:start;">${r[0]}</td><td style="text-align:start;">${r[1]}</td><td style="text-align:start;">${r[2]}</td><td>${r[3]}</td></tr>`).join("");
     }
 
     /* ================= PAGE 3: REGULATOR ================= */
     function renderRegulator() {
       const rs = "rate_spread (APR − APOR on the lock date)";
       const fee = "origination_charges ÷ loan_amount × 100";
+      const fid = (n) => `F-${String(n).padStart(2, "0")}`;
+      const dollarStr = F.feeBank !== null ? ` (~$${Math.round(F.feeBank * 30).toLocaleString("en-US")} on $300k)` : "";
+      let idx = 1;
       const facts = [
-        ["F1", "Rate-spread gap vs. banks", fmtBps(F.gapBank), `100 × (median ${rs}, fintech − bank); fintech ${fmtPct(F.rsF)}, bank ${fmtPct(F.rsB)}`, "analyze_pricing.py → headline_metrics.national_controlled_sample"],
-        ["F2", "Rate-spread gap vs. other nonbanks", fmtBps(F.gapNB), "Same measure; comparator = non-fintech nonbanks (Philadelphia Fed TYPE 40/41)", "analyze_pricing.py → headline_metrics.national_vs_nonbank"],
-        ["F3", "Origination-fee gap vs. other nonbanks", fmtBps(F.feeNB), `Median ${fee}, fintech − comparator`, "analyze_pricing.py → national_vs_nonbank.orig_pct_gap_bps"],
-        ...PRIORITY.map((p, i) => [`F${4 + i}`, `Fee gap vs. other nonbanks, ${p.label}`, fmtBps(p.orig_pct_gap_bps), `As F3 within ${p.dimension} = ${p.group}`, "analyze_pricing.py → nonbank_priority"]),
-        [`F${4 + PRIORITY.length}`, "Origination-fee gap vs. banks", fmtBps(F.feeBank), `As F3, comparator = banks`, "build_dashboard.py → slices ALL|ALL|ALL"],
-        [`F${5 + PRIORITY.length}`, `Risk cells with gap ≥ +${MATERIAL_BPS} bps`, `${F.cellsHigher} of ${F.cellsTotal}`, "debt_to_income_ratio (4 bands <50%) × combined_loan_to_value_ratio (4 bands)", "build_dashboard.py → slices ALL|DTI|CLTV"],
-        [`F${6 + PRIORITY.length}`, "Fintech lenders above the bank median", `${F.lendersAbove} of ${F.lendersTotal}`, "Per-lender median rate spread vs. bank median; lender = lei", "build_dashboard.py → lender_stats"],
-        [`F${7 + PRIORITY.length}`, "Range across sample definitions (vs. banks)", `${fmtBps(F.robMin, false)} to ${fmtBps(F.robMax, false)}`, "F1 recomputed under each sample definition; shown in the Analyst page decision table", "build_dashboard.py → robustness_checks"],
-        [`F${8 + PRIORITY.length}`, "Lender-clustered 95% CI (baseline)", `${fmtBps(F.ci[0], false)} to ${fmtBps(F.ci[1], false)}`, "Cluster bootstrap at the lender (LEI) level, 300 draws: resamples lenders, not loans", "analyze_pricing.py → baseline_lender_cluster_ci95_bps"],
-        [`F${9 + PRIORITY.length}`, "Four-way cells where fintech is higher", `${F.fourWay} of ${F.fourWayTot}`, "DTI × CLTV × income × loan size cells with ≥25 loans per side", "analyze_pricing.py → four_way_cells_*"],
+        [fid(idx++), "Rate-spread gap vs. banks (baseline)", fmtBps(F.gapBank), `100 × (median ${rs}, fintech − bank); ${fmtPct(F.rsF)} vs. ${fmtPct(F.rsB)}; analyze_pricing.py → national_controlled_sample`, AS_OF, "E · R · C"],
+        [fid(idx++), "Rate-spread gap vs. other nonbanks", fmtBps(F.gapNB), `Same measure vs. ${fmtN(F.lNB)} non-fintech nonbanks (TYPE 40/41, ${fmtN(F.nNB)} loans); analyze_pricing.py → national_vs_nonbank`, AS_OF, "E · R · C"],
+        [fid(idx++), "Origination-fee gap vs. other nonbanks", fmtBps(F.feeNB), `Median ${fee}, fintech − nonbank comparator; analyze_pricing.py → national_vs_nonbank.orig_pct_gap_bps`, AS_OF, "E · R · C"],
+        ...PRIORITY.map((p) => {
+          const k = p.dimension === "loan_amount_group" ? "loan" : p.dimension === "income_group" ? "income" : p.dimension === "cltv_group" ? "cltv" : "dti";
+          const bk = bankBar(`${k}|${p.group}`);
+          return [fid(idx++), `Priority fee gap vs. nonbanks (${p.label})`, fmtBps(p.orig_pct_gap_bps), `As F-03 in ${p.dimension}=${p.group} (spread ${fmtBps(p.rate_spread_gap_bps)} vs. nonbanks; ${bk ? fmtBps(bk.gap_rs) + " vs. banks" : ""}); nonbank_priority`, AS_OF, "E · R · C"];
+        }),
+        [fid(idx++), "Origination-fee gap vs. banks (baseline)", `${fmtBps(F.feeBank)}${dollarStr}`, `Median ${fee} vs. ${fmtN(F.lB)} banks (${fmtPct(F.ocF, 2)} vs. ${fmtPct(F.ocB, 2)}); build_dashboard.py → slices ALL|ALL|ALL`, AS_OF, "E · R · C"],
+        [fid(idx++), "High-CLTV (>95%, <5% down) gaps", `${fmtBps(F.hiCltvGapBank)} vs. banks / ${fmtBps(F.hiCltvFeeNB)} fee vs. nonbanks`, `Spread gap ${fmtBps(F.hiCltvGapNB)} vs. nonbanks in cltv_group='>95%'; slices ALL|cltv|>95% & nonbank_by_segment`, AS_OF, "E · R · C"],
+        [fid(idx++), `Risk cells with gap ≥ +${MATERIAL_BPS} bps vs. banks`, `${F.cellsHigher} of ${F.cellsTotal}`, `debt_to_income_ratio (4 bands <50%) × combined_loan_to_value_ratio (4 bands); build_dashboard.py → slices ALL|DTI|CLTV`, AS_OF, "E · R · C"],
+        [fid(idx++), "Fintech lenders above bank median", `${F.lendersAbove} of ${F.lendersTotal} (${F.lenders5} ≥ +${MATERIAL_BPS} bps)`, `Per-lender median ${rs} vs. bank median (${fmtPct(F.rsB)}); equal-weighted gap ${fmtBps(DATA.lender_stats.equal_weighted_gap_bps)}; lender_stats`, AS_OF, "R · C"],
+        [fid(idx++), `Ex-${F.rocketName || "Rocket"} rate-spread gap vs. banks`, fmtBps(F.exRocket), `Drops largest lender (${F.rocketShare ? F.rocketShare.toFixed(0) : "47"}% of fintech loans) on baseline; analyze_pricing.py → robustness_checks`, AS_OF, "R · C"],
+        [fid(idx++), "Sample sensitivity range & 95% CI vs. banks", `${fmtBps(F.robMin, false)} to ${fmtBps(F.robMax, false)} (CI ${fmtBps(F.ci[0], false)} to ${fmtBps(F.ci[1], false)})`, `Across ${robGaps.length} sample definitions + 300-draw LEI cluster bootstrap CI; Analyst decision table & baseline_lender_cluster_ci95_bps`, AS_OF, "R · C"],
+        [fid(idx++), "Four-way matched cells where fintech is higher", `${F.fourWay} of ${F.fourWayTot}`, `DTI × CLTV × income × loan size cells (≥25 loans/side); analyze_pricing.py → four_way_cells_*`, AS_OF, "C"],
       ];
       $("facts-tbody").innerHTML = facts.map((r) =>
-        `<tr><td>${r[0]}</td><td style="text-align:start;">${r[1]}</td><td style="font-weight:800; white-space:nowrap;">${r[2]}</td><td style="text-align:start;">${r[3]}</td><td style="text-align:start;"><code>${r[4]}</code></td></tr>`).join("");
+        `<tr><td><strong>${r[0]}</strong></td><td style="text-align:start;">${r[1]}</td><td style="font-weight:800; white-space:nowrap;">${r[2]}</td><td style="text-align:start;">${r[3]}</td><td style="white-space:nowrap;">${r[4]}</td><td style="white-space:nowrap;"><strong>${r[5]}</strong></td></tr>`).join("");
 
       const fun = PROV.funnel || {};
       const g = PROV.groups || {};
@@ -1727,7 +1785,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const lar = (PROV.downloads || {}).lar;
       const sc = PROV.source_check;
       $("data-asof").innerHTML =
-        `Data: 2025 HMDA snapshot (FFIEC, published ${lar ? fmtDate(lar.last_modified) : "N/A"}), retrieved ${lar ? fmtDate(lar.downloaded_at_utc) : "N/A"}` +
+        `Data: 2025 HMDA snapshot (as of ${AS_OF}, FFIEC), retrieved ${lar ? fmtDate(lar.downloaded_at_utc) : "N/A"}` +
         ` &bull; results computed ${fmtDate(DATA.generated_at_utc)} &bull; dashboard built ${fmtDate(PROV.built_at_utc)}` +
         (sc ? ` &bull; source check ${sc.status === "match" ? "passed" : sc.status} ${fmtDate(sc.checked_at_utc)}` : "");
     }

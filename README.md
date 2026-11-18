@@ -58,16 +58,29 @@ Project Audible/
 
 | Page | Panel | Question it answers | What is on it |
 |---|---|---|---|
-| **Executive · Decision** | Executive | What should AFC do? | Recommendation as the title; What → So What → Now What; three-step card (+16.4 bps vs. banks → −1.2 bps vs. other nonbanks → +6.4 bps fee gap that remains); one dot plot comparing both benchmarks by borrower group; next steps. No filters. |
-| **Analyst · Evidence & Risk** | Risk | When would we be wrong? | State / DTI / CLTV filters; DTI × CLTV matrix; median + IQR comparison; gap by borrower dimension (rate spread or fee); every fintech lender; robustness table with CI; "What would change our recommendation" checked against today's numbers. |
-| **Regulator · Traceability** | Compliance | Can every number be traced? | Fact sheet (each headline number, its formula, HMDA fields and the JSON key it is read from); data lineage 13.5M → 511,199; fixed parameters; sources with versions and SHA-256; live FFIEC source check; what the analysis does not claim. |
+| **Executive · Decision** | Executive | What should AFC do? | Recommendation as title (`as of 2026-06-23`); three-step KPI chain (`What → So What → Now What` with `~$1,117` upfront fee context on `$300k` loans); 4-row priority dot plot (`All loans`, `Loan ≤$200k`, `Income ≤$75k`, `CLTV >95%`); next steps. No filters. |
+| **Analyst · Evidence & Risk** | Risk | When would we be wrong? | Click-to-drill DTI × CLTV matrix; median + IQR comparison (with coverage badge & Reset); segment and 14-lender charts with `[vs. Banks | vs. Nonbank Peers]` & `[Rate spread | Origination fee]` toggles and Action Titles; 6-row "What would change our recommendation" table (including the 5-spec sample range and 95% CI). |
+| **Regulator · Traceability** | Compliance | Can every number be traced? | Fact ledger `F-01`–`F-12` (value, formula/field, JSON key, `As-of`, `Used in`); data lineage 13.5M → 511,199; fixed parameters; sources with versions and SHA-256; live FFIEC source check; what the analysis does not claim. |
 
-All pages read the same numbers from the pipeline outputs at build time, with round-half-up formatting identical to the Word memos, so the same fact never shows two values. Open a page directly with `#analyst` or `#reg` at the end of the file URL.
+All pages read the same numbers from the pipeline outputs at build time, stamp the unified `2026-06-23` snapshot as-of date, expose Fact Ledger hover tooltips (`F-01`–`F-12`), and use round-half-up formatting identical to the Word memos. Open a page directly with `#analyst` or `#reg` at the end of the file URL.
+
+### Tufte Visual Audit Log (`V-01`–`V-06`)
+
+Peer-audited across Executive (`E`), Analyst (`R`), and Compliance (`C`) views. All bars use explicit zero baselines; mixed-sign spreads use dot plots (`Lie Factor = 1.00`).
+
+| Visual | Page | Ink | Junk | Lie (LF) | Integ. | Density | Change made (peer-audited: Violla Tania) |
+|---|---|---|---|---|---|---|---|
+| **V-01** | Executive | ✓ | ✓ | ✓ LF 1.0 | ✓ | ✓ | Collapsed duplicate What/So What/Now What bullets into 3 KPI chain cards; added `$1,117` dollar fee context (`F-06`). |
+| **V-02** | Executive | ✓ | ✓ | ✓ LF 1.0 | ✓ | ✓ | Trimmed dumbbell from 6 to 4 priority rows; aligned vs.-bank dot color to amber (`≥ +5 bps`); stamped `bps` units & `As-of`. |
+| **V-03** | Analyst | ✓ | ✓ | ✓ LF 1.0 | ✓ | ✓ | Removed redundant 3-KPI slice bar & dropdown slicers; matrix click drives drill-down with `[F-08]` tooltip. |
+| **V-04** | Analyst | ✓ | ✓ | ✓ LF 1.0 | ✓ | ✓ | Fixed origination-fee bar baseline explicitly at `0%` (scale `0–2%`, `LF = 1.00`); labeled `−0.6%` to `+1.2%` scale on IQR chart. |
+| **V-05** | Analyst | ✓ | ✓ | ✓ LF 1.0 | ✓ | ✓ | Added `[vs. Banks \| vs. Nonbank Peers]` & `[Rate spread \| Origination fee]` toggles to segment/lender charts; switched to Action Titles. |
+| **V-06** | Regulator | ✓ | ✓ | ✓ LF 1.0 | ✓ | ✓ | Added `As-of` and `Used-in (E·R·C)` columns to Fact Ledger `F-01`–`F-12`, hover tooltips across pages, and folded robustness into decision rules. |
 
 ### Run it (cold start, no manual steps)
 
 ```bash
-./run_demo.sh          # unit tests → live FFIEC source check → rebuild dashboard from saved results → open it
+./run_demo.sh          # unit tests → live FFIEC source check → rebuild dashboard & 3 Word memos → open it
 ./run_demo.sh --full   # rerun all five pipeline steps from the FFIEC download first (~700 MB)
 ```
 
