@@ -200,7 +200,7 @@ def build_document_xml() -> str:
     ))
     parts.append(bullet_p(
         '5. Redesigned 3-Audience Dashboard & Tufte Audit (Sessions 2–4): ',
-        'Refactored the UI into Executive, Analyst, and Regulator pages backed by Fact Ledger F-01–F-12 and Tufte Audit Log V-01–V-06. Dropped redundant slice KPIs, dropdown slicers, and state splits to keep Executive focused on external validity ($1,117 fee context; nonbank peer benchmark -1.2 bps spread / +6.4 bps fees). Consolidated robustness specs into the Analyst decision table.'
+        'Refactored the UI into Executive, Analyst, and Regulator pages backed by Fact Ledger F-01–F-12 (with Tufte Audit Log V-01–V-06 documented in README.md). Dropped redundant slice KPIs, dropdown slicers, and state splits to keep Executive focused on external validity ($1,117 fee context; nonbank peer benchmark -1.2 bps spread / +6.4 bps fees). Consolidated robustness specs into the Analyst decision table.'
     ))
 
     # 3. Clear Human Ownership

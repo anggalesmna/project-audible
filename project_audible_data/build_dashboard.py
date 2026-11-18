@@ -1160,30 +1160,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
           </div>
 
-          <div class="panel-card">
-            <div>
-              <h2 class="panel-title">Tufte visual audit log: proof every chart passed the five tests</h2>
-              <p class="panel-subtitle">Peer-audited across Executive (E), Analyst (R), and Compliance (C) views. All bars use zero baselines; mixed-sign spreads use dot plots (Lie Factor = 1.00).</p>
-            </div>
-            <div class="table-scroll" tabindex="0">
-              <table class="clean-table reg-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Visual</th>
-                    <th scope="col">Page</th>
-                    <th scope="col">Ink</th>
-                    <th scope="col">Junk</th>
-                    <th scope="col">Lie (LF)</th>
-                    <th scope="col">Integ.</th>
-                    <th scope="col">Density</th>
-                    <th scope="col" style="text-align:start;">Change made (peer-audited: Violla Tania)</th>
-                  </tr>
-                </thead>
-                <tbody id="tufte-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-
           <div class="two-col-grid">
             <div class="panel-card">
               <div>
@@ -1758,18 +1734,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       ];
       $("facts-tbody").innerHTML = facts.map((r) =>
         `<tr><td><strong>${r[0]}</strong></td><td style="text-align:start;">${r[1]}</td><td style="font-weight:800; white-space:nowrap;">${r[2]}</td><td style="text-align:start;">${r[3]}</td><td style="white-space:nowrap;">${r[4]}</td><td style="white-space:nowrap;"><strong>${r[5]}</strong></td></tr>`).join("");
-
-      const okBadge = `<span class="badge badge-ok" style="padding-block:0.1rem; padding-inline:0.4rem;">✓</span>`;
-      const tufteRows = [
-        ["V-01", "Executive", okBadge, okBadge, `${okBadge} LF 1.0`, okBadge, okBadge, "Collapsed duplicate What/So What/Now What bullets into 3 KPI chain cards; added $1,117 dollar fee context (F-06)."],
-        ["V-02", "Executive", okBadge, okBadge, `${okBadge} LF 1.0`, okBadge, okBadge, "Trimmed dumbbell from 6 to 4 priority rows; aligned vs.-bank dot color to amber (≥ +5 bps); stamped bps units & As-of."],
-        ["V-03", "Analyst", okBadge, okBadge, `${okBadge} LF 1.0`, okBadge, okBadge, "Removed redundant 3-KPI slice bar & dropdown slicers; matrix click drives drill-down with [F-08] tooltip."],
-        ["V-04", "Analyst", okBadge, okBadge, `${okBadge} LF 1.0`, okBadge, okBadge, "Fixed origination-fee bar baseline explicitly at 0% (scale 0–2%, LF = 1.00); labeled −0.6% to +1.2% scale on IQR chart."],
-        ["V-05", "Analyst", okBadge, okBadge, `${okBadge} LF 1.0`, okBadge, okBadge, "Added [vs. Banks | vs. Nonbank Peers] & [Rate spread | Origination fee] toggles to segment/lender charts; switched to Action Titles."],
-        ["V-06", "Regulator", okBadge, okBadge, `${okBadge} LF 1.0`, okBadge, okBadge, "Added As-of and Used-in (E·R·C) columns to Fact Ledger F-01–F-12, hover tooltips across pages, and folded robustness into decision rules."],
-      ];
-      $("tufte-tbody").innerHTML = tufteRows.map((r) =>
-        `<tr><td><strong>${r[0]}</strong></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td style="white-space:nowrap;">${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td style="text-align:start;">${r[7]}</td></tr>`).join("");
 
       const fun = PROV.funnel || {};
       const g = PROV.groups || {};

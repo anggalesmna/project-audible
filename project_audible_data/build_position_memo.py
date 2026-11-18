@@ -222,7 +222,7 @@ def build_document_xml(f, date_text):
         rows, [3200, 1850, 1850, 1850, 1762]))
     note = ('Gap = Fintech median − comparator median. Rate spread = APR − APOR (lock date). '
             'Nonbanks = non-fintech independent mortgage banks (TYPE 40/41). Source: 2025 FFIEC HMDA (as of 2026-06-23); '
-            'dashboard Executive & Analyst pages (Fact Ledger F-01–F-12; Tufte audit V-01–V-06).')
+            'dashboard Executive & Analyst pages (Fact Ledger F-01–F-12).')
     if not f['nb_seg']:
         note += ' "rerun" = segment benchmark not yet computed; rerun analyze_pricing.py.'
     parts.append(p_xml([r_xml(note, italic=True, size_half_pt=16, color='475569')], before=20, after=20, line=200))

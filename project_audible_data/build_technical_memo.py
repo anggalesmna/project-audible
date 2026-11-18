@@ -176,7 +176,7 @@ def build_document_xml() -> str:
     ))
     parts.append(bullet_p(
         'Step 4 & 5 — Pricing Metrics & 3-Audience Dashboard (analyze_pricing.py & build_dashboard.py): ',
-        'Evaluates the controlled baseline (DTI <50%: 511,199 loans — 173,033 Fintech vs. 338,166 Bank) across Rate-Spread Gap (+16.4 bps: 0.213% vs. 0.049%), Upfront Fee Ratio (+37.2 bps: 0.947% vs. 0.575%, ~$1,117 on $300k), and Interest Rate (+12.5 bps), plus 600 non-fintech nonbanks (-1.2 bps spread; +6.4 bps fees). Outputs feed the 3-page dashboard (Executive, Analyst, Regulator with Fact Ledger F-01–F-12 and Tufte Audit Log V-01–V-06).'
+        'Evaluates the controlled baseline (DTI <50%: 511,199 loans — 173,033 Fintech vs. 338,166 Bank) across Rate-Spread Gap (+16.4 bps: 0.213% vs. 0.049%), Upfront Fee Ratio (+37.2 bps: 0.947% vs. 0.575%, ~$1,117 on $300k), and Interest Rate (+12.5 bps), plus 600 non-fintech nonbanks (-1.2 bps spread; +6.4 bps fees). Outputs feed the 3-page dashboard (Executive, Analyst, Regulator with Fact Ledger F-01–F-12; Tufte visual audit V-01–V-06 documented in README.md).'
     ))
 
     # 3. Reproducibility & Parameters (5 pts)
