@@ -1161,6 +1161,27 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
           </div>
 
+          <div class="panel-card">
+            <div>
+              <h2 id="f11-title" class="panel-title">F-11 detail: the gap vs. banks under five sample definitions</h2>
+              <p id="f11-sub" class="panel-subtitle"></p>
+            </div>
+            <div class="table-scroll" tabindex="0">
+              <table class="clean-table reg-table">
+                <thead>
+                  <tr>
+                    <th scope="col" style="text-align:start;">Sample definition</th>
+                    <th scope="col">Fintech N</th>
+                    <th scope="col">Bank N</th>
+                    <th scope="col">Spread gap (bps)</th>
+                    <th scope="col">Fee gap (bps)</th>
+                  </tr>
+                </thead>
+                <tbody id="f11-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
           <div class="two-col-grid">
             <div class="panel-card">
               <div>
@@ -1736,6 +1757,31 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       ];
       $("facts-tbody").innerHTML = facts.map((r) =>
         `<tr><td><strong>${r[0]}</strong></td><td style="text-align:start;">${r[1]}</td><td style="font-weight:800; white-space:nowrap;">${r[2]}</td><td style="text-align:start;">${r[3]}</td><td style="white-space:nowrap;">${r[4]}</td><td style="white-space:nowrap;"><strong>${r[5]}</strong></td></tr>`).join("");
+
+      // F-11 detail: the sample definitions behind the sensitivity range (same rows as robGaps).
+      const f11Row = facts.find((r) => r[1].startsWith("Sample sensitivity"));
+      const f11Id = f11Row ? f11Row[0] : "F-11";
+      const specLabel = (slice) => {
+        if (slice.startsWith("Controlled baseline")) return "Controlled baseline, DTI <50% (headline)";
+        if (slice.startsWith("Controlled sample")) return "Including DTI \u226550%";
+        if (slice.startsWith("Site-built")) return "Site-built 1-unit homes only (no manufactured or multi-unit)";
+        if (slice.startsWith("Excluding all review-flagged")) return "Excluding loans flagged in data-quality review";
+        if (slice.startsWith("Unadjusted full sample")) return "Full sample, no borrower filters (incl. missing fields, 21st Mortgage)";
+        return slice;
+      };
+      const specs = DATA.robustness_checks.filter((r) => !isPeerRow(r));
+      $("f11-title").textContent = `${f11Id} detail: the gap vs. banks under ${specs.length} sample definitions`;
+      $("f11-sub").innerHTML =
+        `Range ${fmtBps(F.robMin)} to ${fmtBps(F.robMax)}; baseline lender-clustered 95% CI ${fmtBps(F.ci[0])} to ${fmtBps(F.ci[1])}.<br>` +
+        `Computed within the dashboard baseline: <code>build_dashboard.py</code> \u2192 <code>robustness_checks</code> &bull; as of ${AS_OF}.<br>` +
+        `<code>analysis_report.md</code> reports some definitions on a broader base, so its values differ slightly.`;
+      $("f11-tbody").innerHTML = specs.map((r) => {
+        const head = r.slice.startsWith("Controlled baseline");
+        const w = head ? "font-weight:800;" : "";
+        return `<tr title="Fact Ledger [${f11Id}] (as of ${AS_OF})"><td style="text-align:start;${w}">${specLabel(r.slice)}</td>` +
+          `<td>${fmtN(r.fintech_loans_rs)}</td><td>${fmtN(r.bank_loans_rs)}</td>` +
+          `<td style="font-weight:700;">${fmtBps(r.rate_spread_gap_bps, false)}</td><td>${fmtBps(r.orig_pct_gap_bps, false)}</td></tr>`;
+      }).join("");
 
       const fun = PROV.funnel || {};
       const g = PROV.groups || {};
