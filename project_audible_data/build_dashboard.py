@@ -639,6 +639,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       font-size: 0.875rem;
       display: block;
     }
+    table:has(#matrix-tbody) { table-layout: fixed; inline-size: 100%; }
     .cell-meta {
       font-size: 0.75rem;
       color: var(--text-muted);
@@ -973,7 +974,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <div class="panel-card">
               <div>
                 <h2 class="panel-title">Fintech prices higher in <span id="matrix-count"></span> DTI &times; CLTV risk cells</h2>
-                <p id="matrix-sub" class="panel-subtitle">Rate-spread gap vs. banks (bps) &bull; 2025 HMDA. Click a cell to drill down; click again to clear. Grey = fewer than 100 loans per side.</p>
+                <p id="matrix-sub" class="panel-subtitle">Rate-spread gap vs. banks (bps) &bull; 2025 HMDA.<br>% F = fintech share of loans in the cell.<br>Click a cell to drill down; click again to clear.<br>Grey = fewer than 100 loans per side.</p>
               </div>
               <div class="table-scroll" tabindex="0">
                 <table class="clean-table">
@@ -1486,7 +1487,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         `<strong>Stage 2 (vs. Nonbank Peers):</strong> switch the Segment &amp; Lender charts below to <em>vs. Nonbank Peers</em> and <em>Origination fee</em> to see rate spreads drop to <strong>${fmtBps(F.gapNB)}</strong> while fees remain <strong>${fmtBps(F.feeNB)}</strong>` +
         (priorityFees ? ` (peaking at ${priorityFees}).` : `.`);
       $("matrix-count").textContent = `${F.cellsHigher} of ${F.cellsTotal}`;
-      $("matrix-sub").textContent = `Rate-spread gap vs. banks (bps) • 2025 HMDA (as of ${AS_OF}). Click a cell to drill down; click again to clear. Grey = fewer than 100 loans per side.`;
+      $("matrix-sub").innerHTML = `Rate-spread gap vs. banks (bps) • 2025 HMDA (as of ${AS_OF}).<br>% F = fintech share of loans in the cell (national: ${(100 * F.nF / (F.nF + F.nB)).toFixed(1)}%).<br>Click a cell to drill down; click again to clear.<br>Grey = fewer than 100 loans per side.`;
     }
 
     function updateKPIsAndDrill() {
@@ -1632,8 +1633,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           } else {
             td.style.backgroundColor = heatColor(s.gap_rs, s.ok);
             const c = !s.ok ? "#64748b" : s.gap_rs >= 0 ? "#92400e" : "#1e40af";
-            const tag = s.ok ? `F ${fmtN(s.nf)} / B ${fmtN(s.nb)}` : `Low N (F ${s.nf})`;
-            td.title = `Fact Ledger [F-08${cltv === ">95%" ? ", F-07" : ""}] (as of ${AS_OF}): DTI ${dti} × CLTV ${cltv} = ${fmtBps(s.gap_rs)}`;
+            const share = Math.round((100 * s.nf) / (s.nf + s.nb));
+            const tag = s.ok ? `${share}% F` : `Low N (F ${s.nf})`;
+            td.title = `Fact Ledger [F-08${cltv === ">95%" ? ", F-07" : ""}] (as of ${AS_OF}): DTI ${dti} × CLTV ${cltv} = ${fmtBps(s.gap_rs)}; ${fmtN(s.nf)} fintech / ${fmtN(s.nb)} bank loans`;
             td.innerHTML = `<span class="cell-gap" style="color:${c};">${fmtBps(s.gap_rs, false)}</span><span class="cell-meta">${tag}</span>`;
           }
           td.addEventListener("click", () => {
