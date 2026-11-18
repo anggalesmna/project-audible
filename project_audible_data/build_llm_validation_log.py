@@ -129,10 +129,10 @@ def build_document_xml() -> str:
     parts.append(p_xml([
         r_xml('Human Owners: ', bold=True, size_half_pt=18, color='B45309'),
         r_xml('Angga Lesmana & Violla Tania   |   ', size_half_pt=18, color='334155'),
-        r_xml('Topic: ', bold=True, size_half_pt=18, color='B45309'),
-        r_xml('Fintech vs. Bank Mortgage Pricing (AFC)   |   ', size_half_pt=18, color='334155'),
+        r_xml('Data As-of: ', bold=True, size_half_pt=18, color='B45309'),
+        r_xml('2025 HMDA (2026-06-23)   |   ', size_half_pt=18, color='334155'),
         r_xml('Date: ', bold=True, size_half_pt=18, color='B45309'),
-        r_xml('October 22–26, 2026', size_half_pt=18, color='334155'),
+        r_xml('Oct 22 – Nov 17, 2026', size_half_pt=18, color='334155'),
     ], before=0, after=40, line=210, bottom_border=True))
 
     # 1. Complete Inventory & Prompts/Outputs Recorded
@@ -199,8 +199,8 @@ def build_document_xml() -> str:
         'Questioned why DTI >=50% lacked bank comparisons at high CLTV; loan-level inspection showed 99.6% of conforming loans have DTI <50% and 69% of Fintech DTI >=50% loans came from one manufactured-housing lender (21st Mortgage) with missing CLTV. Excluded DTI >=50% and corrected the headline from +17.2 bps (unadjusted) to +16.4 bps (controlled baseline).'
     ))
     parts.append(bullet_p(
-        '5. Redesigned Dashboard & Added Nonbank Comparator (Sessions 2 & 3): ',
-        'Replaced a dense single-page draft with a clean 3-tab layout and visual IQR/bar comparisons. During peer review, rejected a false LLM claim that static HTML lacked data, fixed unverified README figures, and added a non-fintech nonbank (TYPE 40/41) comparator. Its result (-1.2 bps) led the team to reframe the recommendation as a review benchmarked against nonbank peers.'
+        '5. Redesigned 3-Audience Dashboard & Tufte Audit (Sessions 2–4): ',
+        'Refactored the UI into Executive, Analyst, and Regulator pages backed by Fact Ledger F-01–F-12 and Tufte Audit Log V-01–V-06. Dropped redundant slice KPIs, dropdown slicers, and state splits to keep Executive focused on external validity ($1,117 fee context; nonbank peer benchmark -1.2 bps spread / +6.4 bps fees). Consolidated robustness specs into the Analyst decision table.'
     ))
 
     # 3. Clear Human Ownership
@@ -210,8 +210,8 @@ def build_document_xml() -> str:
         'Angga Lesmana selected the AFC audience, NYU Stern classification, depository bank benchmark (TYPE 10/14/20), fee normalization (origination_charges / loan_amount), conforming DTI <50% scope, and 3-tab dashboard design. Violla Tania directed the peer review, non-fintech nonbank robustness check (TYPE 40/41), and Position Memo structure.'
     ))
     parts.append(bullet_p(
-        'Final Figures Verified Against Pipeline Outputs: ',
-        '1,508,076 conforming loans extracted; 511,199 controlled baseline loans (173,033 Fintech across 14 lenders vs. 338,166 Bank across 655 lenders); +16.4 bps median rate-spread gap (0.213% vs. 0.049%; lender-clustered 95% CI: +11.5 to +23.3 bps); +12.5 bps rate gap; +37.2 bps origination-fee gap; Fintech higher in 16 of 16 DTI x CLTV cells and 12 of 14 lenders; -1.2 bps spread gap vs. 600 non-fintech nonbanks (808,681 loans).'
+        'Final Figures Verified Against Pipeline Outputs (as of 2026-06-23): ',
+        '1,508,076 conforming loans; 511,199 controlled baseline loans (173,033 Fintech / 338,166 Bank); +16.4 bps spread gap (0.213% vs. 0.049%; 95% CI +11.5 to +23.3 bps); +12.5 bps rate gap; +37.2 bps fee gap (~$1,117 on $300k); higher in 16/16 DTI x CLTV cells and 12/14 lenders; -1.2 bps spread & +6.4 bps fee gap vs. 600 nonbanks (808,681 loans; +17.8 bps <=$200k, +14.5 bps <=$75k).'
     ))
 
     sect_pr = (

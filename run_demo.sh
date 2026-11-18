@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Project Audible capstone: cold-start demo. No manual steps.
 #
-#   ./run_demo.sh          tests -> live FFIEC source check -> rebuild dashboard from saved results -> open it
+#   ./run_demo.sh          tests -> live FFIEC source check -> rebuild dashboard & memos -> open dashboard
 #   ./run_demo.sh --full   reruns the whole 5-step pipeline from the FFIEC download first (~700 MB, slow)
 #
 # Needs only Python 3.10+. pandas/openpyxl are needed for --full (lender classification) and are
@@ -52,6 +52,11 @@ echo "== Live source check (FFIEC)"
 
 echo "== Build dashboard"
 "$PY" build_dashboard.py "${BUILD_ARGS[@]+"${BUILD_ARGS[@]}"}"
+
+echo "== Build Word deliverables (Position, Technical, LLM Log)"
+"$PY" build_position_memo.py
+"$PY" build_technical_memo.py
+"$PY" build_llm_validation_log.py
 
 OUT="$ROOT/Submit/Project Audible Dashboard.html"
 echo "== Done: $OUT"

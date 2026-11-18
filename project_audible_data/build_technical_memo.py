@@ -130,10 +130,10 @@ def build_document_xml() -> str:
     parts.append(p_xml([
         r_xml('Topic: ', bold=True, size_half_pt=18, color='B45309'),
         r_xml('Fintech vs. Bank Mortgage Pricing   |   ', size_half_pt=18, color='334155'),
-        r_xml('Audience: ', bold=True, size_half_pt=18, color='B45309'),
-        r_xml('American Fintech Council (AFC)   |   ', size_half_pt=18, color='334155'),
+        r_xml('Data As-of: ', bold=True, size_half_pt=18, color='B45309'),
+        r_xml('2025 HMDA (2026-06-23)   |   ', size_half_pt=18, color='334155'),
         r_xml('Date: ', bold=True, size_half_pt=18, color='B45309'),
-        r_xml('October 26, 2026', size_half_pt=18, color='334155'),
+        r_xml('November 17, 2026', size_half_pt=18, color='334155'),
     ], before=0, after=38, line=205, bottom_border=True))
 
     # 1. Data Sources and Provenance (8 pts)
@@ -175,15 +175,15 @@ def build_document_xml() -> str:
         'Retains all 1,508,076 rows and raw strings (NA, Exempt, zeroes) while adding parsed numeric fields, anomaly flags, and 4 risk bins: Standard DTI (<30%, 30%-<36%, 36%-43%, 44%-49%), CLTV (<=80%, 80.01%-90%, 90.01%-95%, >95%), Income (<=$75k, $75k-$125k, $125k-$200k, >$200k), and Loan Size (<=$200k, $200k-$350k, $350k-$500k, >$500k).'
     ))
     parts.append(bullet_p(
-        'Step 4 & 5 — Pricing Metrics & Dashboard (analyze_pricing.py & build_dashboard.py): ',
-        'Evaluates the controlled baseline (valid DTI, CLTV, income, loan size, and DTI <50%: 511,199 loans — 173,033 Fintech vs. 338,166 Bank) across three metrics: (1) Main: Rate-Spread Gap = 100 * (Median Spread_Fintech - Median Spread_Bank) (+16.4 bps: 0.213% vs. 0.049%); (2) Upfront Fee Ratio = 100 * (origination_charges / loan_amount) (+37.2 bps: 0.947% vs. 0.575%); (3) Interest Rate (+12.5 bps: 6.625% vs. 6.500%).'
+        'Step 4 & 5 — Pricing Metrics & 3-Audience Dashboard (analyze_pricing.py & build_dashboard.py): ',
+        'Evaluates the controlled baseline (DTI <50%: 511,199 loans — 173,033 Fintech vs. 338,166 Bank) across Rate-Spread Gap (+16.4 bps: 0.213% vs. 0.049%), Upfront Fee Ratio (+37.2 bps: 0.947% vs. 0.575%, ~$1,117 on $300k), and Interest Rate (+12.5 bps), plus 600 non-fintech nonbanks (-1.2 bps spread; +6.4 bps fees). Outputs feed the 3-page dashboard (Executive, Analyst, Regulator with Fact Ledger F-01–F-12 and Tufte Audit Log V-01–V-06).'
     ))
 
     # 3. Reproducibility & Parameters (5 pts)
     parts.append(section_heading('3. Reproducibility, Parameters, and Assumptions'))
     parts.append(bullet_p(
-        'Pipeline Execution (project_audible_data/README.md): ',
-        'Run in sequence from project_audible_data/: python3 download_hmda.py -> classify_lenders_nyu.py -> clean_mortgages.py -> analyze_pricing.py -> build_dashboard.py -> build_position_memo.py. Run tests via python3 -m unittest -v (Python 3.10+ standard library; pandas and openpyxl required only for Step 2).'
+        'Cold-Start Execution & Tests (run_demo.sh & README.md): ',
+        'Run ./run_demo.sh (tests -> live FFIEC check_source.py -> build_dashboard.py --from-json -> rebuild all 3 Word memos) or ./run_demo.sh --full to rerun all 5 steps from FFIEC download. Python 3.10+ standard library; pandas & openpyxl needed only for Step 2.'
     ))
     parts.append(bullet_p(
         'Core Parameters & Assumptions: ',
